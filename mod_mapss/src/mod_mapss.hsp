@@ -1,0 +1,362 @@
+// str-str map
+
+#ifndef included_mod_mapss_hsp
+#define included_mod_mapss_hsp
+
+#module m_mapss
+
+#define vartype_str 2
+
+#define true 1
+#define false 0
+
+#const s_state_active (1 << 0)
+
+// inner(0) for meta
+// inner(1) for default value
+#define ctype key_index(%1) (2 + (%1) * 2)
+
+#define ctype value_index(%1) (2 + (%1) * 2 + 1)
+
+#deffunc mapss_init
+
+	s_hash_base = (rnd(0x7fff) << 16) | rnd(0x7fff)
+	return
+
+#deffunc mapss_make array inner
+
+	sdim inner, , value_index(1) + 1
+	mapss_meta_write_cap inner, 1
+	return
+
+// -----------------------------------------------
+// meta
+// -----------------------------------------------
+
+// inner(0) is used for meta data
+
+// zero, len, cap
+#const s_base_meta_size (3 * 4)
+
+// state, key_hash, key_len, value_len
+#const s_entry_meta_size (4 * 4)
+
+#deffunc mapss_meta_reset array inner, int cap
+
+	memexpand inner,    s_base_meta_size + s_entry_meta_size * cap
+	memset    inner, 0, s_base_meta_size + s_entry_meta_size * cap
+
+	mapss_meta_write_cap inner, cap
+	return
+
+#defcfunc mapss_meta_read_len array inner
+
+	assert vartype(inner) == vartype_str
+	return lpeek(inner, 4)
+
+#deffunc mapss_meta_write_len array inner, int len
+
+	assert len >= 0
+	lpoke inner, 4, len
+	return
+
+#defcfunc mapss_meta_read_cap array inner
+
+	assert vartype(inner) == vartype_str
+	return lpeek(inner, 8)
+
+#deffunc mapss_meta_write_cap array inner, int cap
+
+	assert cap >= 0
+	lpoke inner, 8, cap
+	return
+
+#defcfunc mapss_meta_read_state array inner, int entry_i
+
+	assert entry_i >= 0
+	assert entry_i < mapss_meta_read_cap(inner)
+	return lpeek(inner, s_base_meta_size + entry_i * s_entry_meta_size + 0)
+
+#deffunc mapss_meta_write_state array inner, int entry_i, int state
+
+	assert entry_i >= 0
+	assert entry_i < mapss_meta_read_cap(inner)
+	lpoke inner, s_base_meta_size + entry_i * s_entry_meta_size + 0, state
+	return
+
+#defcfunc mapss_meta_read_key_hash array inner, int entry_i
+
+	assert entry_i >= 0
+	assert entry_i < mapss_meta_read_cap(inner)
+	return lpeek(inner, s_base_meta_size + entry_i * s_entry_meta_size + 4)
+
+#deffunc mapss_meta_write_key_hash array inner, int entry_i, int key_hash
+
+	assert entry_i >= 0
+	assert entry_i < mapss_meta_read_cap(inner)
+	lpoke inner, s_base_meta_size + entry_i * s_entry_meta_size + 4, key_hash
+	return
+
+#defcfunc mapss_meta_read_key_len array inner, int entry_i
+
+	assert entry_i >= 0
+	assert entry_i < mapss_meta_read_cap(inner)
+	return lpeek(inner, s_base_meta_size + entry_i * s_entry_meta_size + 8)
+
+#deffunc mapss_meta_write_key_len array inner, int entry_i, int key_len
+
+	assert entry_i >= 0
+	assert entry_i < mapss_meta_read_cap(inner)
+	assert key_len >= 0
+	lpoke inner, s_base_meta_size + entry_i * s_entry_meta_size + 8, key_len
+	return
+
+#defcfunc mapss_meta_read_value_len array inner, int entry_i
+
+	assert entry_i >= 0
+	assert entry_i < mapss_meta_read_cap(inner)
+	return lpeek(inner, s_base_meta_size + entry_i * s_entry_meta_size + 12)
+
+#deffunc mapss_meta_write_value_len array inner, int entry_i, int value_len
+
+	assert entry_i >= 0
+	assert entry_i < mapss_meta_read_cap(inner)
+	assert value_len >= 0
+	lpoke inner, s_base_meta_size + entry_i * s_entry_meta_size + 12, value_len
+	return
+
+#defcfunc mapss_entry_is_active array inner, int entry_i
+
+	return (mapss_meta_read_state(inner, entry_i) & s_state_active) != 0
+
+// -----------------------------------------------
+// hash
+// -----------------------------------------------
+
+#defcfunc mapss_hash_key int key_len, var key_str, \
+	local h
+
+	h = s_hash_base ^ 17
+
+	repeat key_len / 4
+		h = ((h << 5) | (h >> 27)) ^ lpeek(key_str, cnt * 4)
+	loop
+
+	if key_len \ 4 == 3 {
+		h = ((h << 5) | (h >> 27)) ^ wpeek(key_str, key_len - 3)
+	}
+	if key_len \ 4 == 2 {
+		h = ((h << 5) | (h >> 27)) ^ wpeek(key_str, key_len - 2)
+	}
+	if key_len \ 2 == 1 {
+		h = ((h << 5) | (h >> 27)) ^ peek(key_str, key_len - 1)
+	}
+	if h < 0 {
+		h = -h
+	}
+	return h
+
+// -----------------------------------------------
+// properties
+// -----------------------------------------------
+
+#defcfunc mapss_length array inner
+
+	return mapss_meta_read_len(inner)
+
+#defcfunc mapss_is_empty array inner
+
+	return mapss_meta_read_len(inner) == 0
+
+#defcfunc mapss_load_factor array inner
+
+	return double(mapss_meta_read_len(inner)) / mapss_meta_read_cap(inner)
+
+#defcfunc mapss_needs_rehashing array inner
+
+	return mapss_load_factor(inner) >= 0.7
+
+// -----------------------------------------------
+// lookup
+// -----------------------------------------------
+
+#deffunc mapss_do_lookup array inner, int key_hash, int key_len, var key_str, var entry_i, \
+	local cap, local ok
+
+	cap = mapss_meta_read_cap(inner)
+	entry_i = key_hash - 1
+	ok = false
+
+	repeat cap
+		entry_i = (entry_i + 1) \ cap
+
+		if mapss_entry_is_active(inner, entry_i) == false {
+			continue
+		}
+
+		if mapss_meta_read_key_hash(inner, entry_i) != key_hash {
+			continue
+		}
+
+		if mapss_meta_read_key_len(inner, entry_i) != key_len {
+			continue
+		}
+
+		if inner(key_index(entry_i)) != key_str {
+			continue
+		}
+
+		ok = true
+		break
+	loop
+
+	logmes strf("lookup %s (%d) -> %i (%d)", key_str, key_hash, entry_i, ok)
+	return ok
+
+#defcfunc mapss_has array inner, str key_str, \
+	local key_hash, local key_len, local key_str_var, local entry_i
+
+	key_str_var = key_str
+	key_len = strlen(key_str_var)
+	key_hash = mapss_hash_key(key_len, key_str_var)
+
+	mapss_do_lookup inner, key_hash, key_len, key_str_var, entry_i
+	return stat
+
+#defcfunc mapss_get array inner, str key_str, \
+	local key_hash, local key_len, local key_str_var, local entry_i
+
+	key_str_var = key_str
+	key_len = strlen(key_str_var)
+	key_hash = mapss_hash_key(key_len, key_str_var)
+
+	mapss_do_lookup inner, key_hash, key_len, key_str_var, entry_i
+	if stat == false {
+		return inner(1)
+	}
+
+	return inner(value_index(entry_i))
+
+// -----------------------------------------------
+// insert
+// -----------------------------------------------
+
+#deffunc mapss_do_insert array inner, \
+	int key_hash, int key_len, var key_str, \
+	int value_len, var value_str, \
+	local cap, local key_i, local entry_i
+
+	cap = mapss_meta_read_cap(inner)
+	entry_i = key_hash \ cap
+
+	if mapss_entry_is_active(inner, entry_i) {
+		// FIXME: locate
+		return false
+	}
+
+	mapss_meta_write_state      inner, entry_i, s_state_active
+	mapss_meta_write_key_hash   inner, entry_i, key_hash
+	mapss_meta_write_key_len    inner, entry_i, key_len
+	mapss_meta_write_value_len  inner, entry_i, value_len
+
+	memexpand   inner(key_index(entry_i)),          key_len + 1
+	memcpy      inner(key_index(entry_i)), key_str, key_len
+	poke        inner(key_index(entry_i)),          key_len, 0
+
+	memexpand   inner(value_index(entry_i)),            value_len + 1
+	memcpy      inner(value_index(entry_i)), value_str, value_len
+	poke        inner(value_index(entry_i)),            value_len, 0
+
+	mapss_meta_write_len        inner, mapss_meta_read_len(inner) + 1
+
+	logmes strf("insert %d (%s (%d) -> %s)", entry_i, key_str, key_hash, value_str)
+	return true
+
+#deffunc mapss_insert array inner, str key_str, str value_str, \
+	local key_hash, local key_len, local key_str_var, \
+	local value_len, local value_str_var
+
+	key_str_var = key_str
+	key_len = strlen(key_str)
+	key_hash = mapss_hash_key(key_len, key_str_var)
+
+	value_str_var = value_str
+	value_len = strlen(value_str_var)
+
+	repeat
+		mapss_do_insert inner, key_hash, key_len, key_str_var, value_len, value_str_var
+		if stat {
+			break
+		}
+
+		mapss_do_rehash inner
+	loop
+	return
+
+// -----------------------------------------------
+// rehash
+// -----------------------------------------------
+
+#deffunc mapss_do_rehash array inner, \
+	local len, local cap, \
+	local key_hashes, local key_lens, local key_strs, \
+	local value_lens, local value_strs, local i, local ok
+
+	// Export.
+	len = mapss_meta_read_len(inner)
+	cap = mapss_meta_read_cap(inner)
+
+	dim key_hashes, len
+	dim key_lens, len
+	sdim key_strs, , len
+	dim value_lens, len
+	sdim value_strs, , len
+
+	i = 0
+	repeat cap
+		if mapss_entry_is_active(inner, cnt) == false {
+			continue
+		}
+
+		key_hashes(i) = mapss_meta_read_key_hash(inner, cnt)
+		key_lens(i) = mapss_meta_read_key_len(inner, cnt)
+		value_lens(i) = mapss_meta_read_value_len(inner, cnt)
+
+		memexpand   key_strs(i),                        key_lens(i) + 1
+		memcpy      key_strs(i), inner(key_index(cnt)), key_lens(i)
+		poke        key_strs(i),                        key_lens(i), 0
+
+		memexpand   value_strs(i),                          value_lens(i) + 1
+		memcpy      value_strs(i), inner(value_index(cnt)), value_lens(i)
+		poke        value_strs(i),                          value_lens(i), 0
+		i++
+	loop
+	assert i == len
+
+	repeat
+		// Extend.
+		cap = limit(cap + cap / 2, 64)
+		mapss_meta_reset inner, cap
+
+		inner(value_index(cap)) = ""
+
+		// Import.
+		ok = true
+
+		repeat len
+			mapss_do_insert inner, key_hashes(cnt), key_lens(cnt), key_strs(cnT), value_lens(cnt), value_strs(cnt)
+			if stat == false {
+				ok = false
+				break
+			}
+		loop
+
+		if ok {
+			break
+		}
+	loop
+	return
+
+#global
+
+#endif

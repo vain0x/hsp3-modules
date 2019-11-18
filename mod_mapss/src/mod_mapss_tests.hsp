@@ -1,0 +1,46 @@
+// Tests.
+
+#include "../src/mod_mapss.hsp"
+
+#define true 1
+#define false 0
+
+	randomize
+	mapss_init
+
+	// simple case
+	mapss_make m
+	assert mapss_length(m) == 0
+	assert mapss_is_empty(m)
+	assert mapss_has(m, "hello") == false
+
+	mapss_insert m, "hello", "world"
+
+	assert mapss_has(m, "hello")
+	assert mapss_get(m, "hello") == "world"
+
+	// multiple keys
+	mapss_make m
+	mapss_insert m, "a", "alpha"
+	mapss_insert m, "b", "bravo"
+	mapss_insert m, "c", "charlie"
+
+	assert mapss_length(m) == 3
+	assert mapss_has(m, "a")
+	assert mapss_get(m, "a") == "alpha"
+
+	// large
+	prefix = str(rnd(10000))
+	mapss_make m
+	size = 100
+	repeat size
+		mapss_insert m, prefix + str(cnt), str(cnt)
+	loop
+
+	assert mapss_length(m) == size
+	repeat size
+		assert mapss_get(m, prefix + str(cnt)) == str(cnt)
+	loop
+
+	dialog "ok"
+	end
