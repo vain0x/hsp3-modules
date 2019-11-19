@@ -389,7 +389,7 @@
 	repeat limit(cap, , s_lookup_max)
 		entry_i = (entry_i + 1) \ cap
 
-		if mapss_entry_is_active(inner, entry_i) == true {
+		if mapss_entry_is_active(inner, entry_i) {
 			continue
 		}
 
