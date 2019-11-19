@@ -68,7 +68,7 @@
 
 #define s_magic_code 0x1ac3
 
-#define s_lookup_max 64
+#define s_lookup_max 1000
 
 #deffunc mapss_init
 
