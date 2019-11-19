@@ -72,7 +72,7 @@
 
 	data_size = limit(given_data_size, 8)
 
-	mem_size = (s_meta_size + s_entry_size * cap + data_size + 0x7) & 0x7ffffff0
+	mem_size = (s_meta_size + s_entry_size * cap + data_size + 0x7) & 0x7ffffff8
 	assert mem_size \ 8 == 0
 
 	inner = ""
@@ -233,7 +233,7 @@
 
 	assert cap > 0
 
-	size = ((8 + cap) + 7) & 0x7ffffff0
+	size = ((8 + cap) + 7) & 0x7ffffff8
 	assert size \ 8 == 0
 	assert size >= 8 + cap
 
