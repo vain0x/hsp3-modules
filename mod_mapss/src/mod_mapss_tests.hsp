@@ -49,6 +49,18 @@
 	assert mapss_length(m) == 1
 	assert mapss_get(m, "a") == "aleph"
 
+	// binary-safety
+	sdim binary_input
+	lpoke binary_input, , 0x00abcd00
+	binary_input_len = 4
+	mapss_make m
+	key = "binary"
+	mapss_set_var m, strlen(key), key, binary_input_len, binary_input
+	mapss_dup m, key, binary_output_len, binary_output
+	assert stat
+	assert binary_output_len == binary_input_len
+	assert lpeek(binary_output) == 0x00abcd00
+
 	// large
 	prefix = str(rnd(10000))
 	mapss_make m

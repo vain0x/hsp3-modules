@@ -350,6 +350,28 @@
 	mapss_do_lookup inner, key_hash, key_len, key_str_var, entry_i
 	return stat == s_lookup_found
 
+// Make a clone variable of value for the key.
+// Return false if missing.
+#deffunc mapss_dup var inner, str key_str, var value_len, var value, \
+	local key_hash, local key_len, local key_str_var, \
+	local entry_i
+
+	key_str_var = key_str
+	key_len = strlen(key_str_var)
+	key_hash = mapss_hash_key(key_len, key_str_var)
+
+	mapss_do_lookup inner, key_hash, key_len, key_str_var, entry_i
+	if stat != s_lookup_found {
+		dupptr value, varptr(inner), 4, vartype_str
+		value_len = 0
+		return false
+	}
+
+	mapss_dup_value inner, entry_i, value
+	value_len = mapss_get_value_len(inner, entry_i)
+	assert value_len <= mapss_get_value_cap(inner, entry_i)
+	return true
+
 #defcfunc mapss_get var inner, str key_str, \
 	local key_hash, local key_len, local key_str_var, \
 	local entry_i, local value
@@ -426,8 +448,11 @@
 
 // Insert an entry. key/value must be variables.
 #deffunc mapss_insert_var var inner, \
-	int key_hash, int key_len, var key_str, \
-	int value_len, var value_str, local entry_i, local ok
+	int key_len, var key_str, \
+	int value_len, var value_str, \
+	local key_hash, local entry_i, local ok
+
+	key_hash = mapss_hash_key(key_len, key_str)
 
 	repeat
 		mapss_try_insert inner, key_hash, key_len, key_str, value_len, value_str, entry_i
@@ -447,19 +472,21 @@
 
 	key_str_var = key_str
 	key_len = strlen(key_str)
-	key_hash = mapss_hash_key(key_len, key_str_var)
 
 	value_str_var = value_str
 	value_len = strlen(value_str_var)
 
-	mapss_insert_var inner, key_hash, key_len, key_str_var, value_len, value_str_var
+	mapss_insert_var inner, key_len, key_str_var, value_len, value_str_var
 	return stat
 
 // Set or insert an entry. key/value must be variables.
 #deffunc mapss_set_var var inner, \
-	int key_hash, int key_len, var key_str, \
+	int key_len, var key_str, \
 	int value_len, var value_str, \
-	local entry_i, local value_cap, local data_size, local data_addr, local t
+	local entry_i, local key_hash, \
+	local value_cap, local data_size, local data_addr, local t
+
+	key_hash = mapss_hash_key(key_len, key_str)
 
 	repeat
 		mapss_try_insert inner, key_hash, key_len, key_str, value_len, value_str, entry_i
@@ -491,17 +518,16 @@
 
 // Set or insert an entry.
 #deffunc mapss_set var inner, str key_str, str value_str, \
-	local key_hash, local key_len, local key_str_var, \
+	local key_len, local key_str_var, \
 	local value_len, local value_str_var
 
 	key_str_var = key_str
 	key_len = strlen(key_str)
-	key_hash = mapss_hash_key(key_len, key_str_var)
 
 	value_str_var = value_str
 	value_len = strlen(value_str_var)
 
-	mapss_set_var inner, key_hash, key_len, key_str_var, value_len, value_str_var
+	mapss_set_var inner, key_len, key_str_var, value_len, value_str_var
 	return
 
 // -----------------------------------------------
