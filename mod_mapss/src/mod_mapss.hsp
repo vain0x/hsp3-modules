@@ -427,7 +427,7 @@
 // Insert an entry. key/value must be variables.
 #deffunc mapss_insert_var var inner, \
 	int key_hash, int key_len, var key_str, \
-	int value_len, var value_str
+	int value_len, var value_str, local ok
 
 	repeat
 		mapss_try_insert inner, key_hash, key_len, key_str, value_len, value_str
@@ -435,9 +435,10 @@
 			mapss_do_rehash inner
 			continue
 		}
+		ok = stat == s_insert_complete
 		break
 	loop
-	return
+	return ok
 
 #deffunc mapss_insert var inner, str key_str, str value_str, \
 	local key_hash, local key_len, local key_str_var, \
@@ -451,7 +452,7 @@
 	value_len = strlen(value_str_var)
 
 	mapss_insert_var inner, key_hash, key_len, key_str_var, value_len, value_str_var
-	return
+	return stat
 
 // -----------------------------------------------
 // rehash
