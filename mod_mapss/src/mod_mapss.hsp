@@ -57,6 +57,8 @@
 #define ctype vec_cap_addr(%1) (s_vec_cap_offset + (%1))
 #define ctype vec_data_addr(%1) (s_vec_data_offset + (%1))
 
+#define s_lookup_max 64
+
 #deffunc mapss_init
 
 	s_hash_base = (rnd(0x10000) << 16) | rnd(0x10000)
@@ -326,7 +328,7 @@
 	entry_i = key_hash - 1
 	ok = false
 
-	repeat cap
+	repeat limit(cap, , s_lookup_max)
 		entry_i = (entry_i + 1) \ cap
 
 		if mapss_entry_is_active(inner, entry_i) == false {
@@ -385,18 +387,34 @@
 // insert
 // -----------------------------------------------
 
-#deffunc mapss_do_insert var inner, \
+// Tries to insert an entry or return false.
+#deffunc mapss_try_insert var inner, \
 	int key_hash, int key_len, var key_str, \
 	int value_len, var value_str, \
-	local cap, local entry_i, local t
+	local cap, local entry_i, local ok, local t
 
 	cap = mapss_cap(inner)
-	entry_i = key_hash \ cap
+	entry_i = key_hash - 1
+	ok = false
 
-	if mapss_entry_is_active(inner, entry_i) {
-		// FIXME: locate
+	// Find the nearest vacant slot.
+	repeat limit(cap, , s_lookup_max)
+		entry_i = (entry_i + 1) \ cap
+
+		if mapss_entry_is_active(inner, entry_i) == true {
+			continue
+		}
+
+		ok = true
+		break
+	loop
+
+	if ok == false {
 		return false
 	}
+
+	assert mapss_cap(inner) == cap
+	assert mapss_entry_is_active(inner, entry_i) == false
 
 	// alloc slot for key
 	mapss_alloc_vec     inner, key_len + 1
@@ -423,6 +441,22 @@
 	lpoke inner, s_entry_len_offset, mapss_length(inner) + 1
 	return true
 
+// Insert an entry. key/value must be variables.
+#deffunc mapss_insert_var var inner, \
+	int key_hash, int key_len, var key_str, \
+	int value_len, var value_str
+
+	repeat
+		mapss_try_insert inner, key_hash, key_len, key_str, value_len, value_str
+		if stat == false {
+			mapss_do_rehash inner
+			continue
+		}
+
+		break
+	loop
+	return
+
 #deffunc mapss_insert var inner, str key_str, str value_str, \
 	local key_hash, local key_len, local key_str_var, \
 	local value_len, local value_str_var
@@ -434,14 +468,7 @@
 	value_str_var = value_str
 	value_len = strlen(value_str_var)
 
-	repeat
-		mapss_do_insert inner, key_hash, key_len, key_str_var, value_len, value_str_var
-		if stat {
-			break
-		}
-
-		mapss_do_rehash inner
-	loop
+	mapss_insert_var inner, key_hash, key_len, key_str_var, value_len, value_str_var
 	return
 
 // -----------------------------------------------
@@ -459,7 +486,7 @@
 	return
 
 #deffunc mapss_do_rehash var inner, \
-	local other, local cap, local ok, \
+	local other, local cap, local data_size, local ok, \
 	local key_hash, local key_len, local key_str, \
 	local value_len, local value_str
 
@@ -467,9 +494,10 @@
 		mapss_clone inner, other
 
 		// Extend.
+		data_size = lpeek(other, s_mem_cap_offset) - (s_meta_size + s_entry_size * cap)
 		cap = mapss_cap(inner)
 		cap = limit(cap + cap / 2, 64)
-		mapss_make inner, cap, lpeek(other, s_mem_cap_offset) // FIXME: calculate data size
+		mapss_make inner, cap, data_size
 
 		// Import.
 		ok = true
@@ -486,7 +514,7 @@
 			value_len = mapss_get_value_len(other, cnt)
 			mapss_dup_value other, cnt, value_str
 
-			mapss_do_insert inner, key_hash, key_len, key_str, value_len, value_str
+			mapss_try_insert inner, key_hash, key_len, key_str, value_len, value_str
 			if stat == false {
 				ok = false
 				break
