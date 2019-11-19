@@ -484,7 +484,7 @@
 		mapss_clone inner, other
 
 		// Extend.
-		data_size = lpeek(other, s_mem_cap_offset) - (s_meta_size + s_entry_size * cap)
+		data_size = lpeek(other, s_mem_cap_offset) - nondata_size(cap)
 		cap = mapss_cap(inner)
 		cap = limit(cap + cap / 2, 64)
 		mapss_make inner, cap, data_size
