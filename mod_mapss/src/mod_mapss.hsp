@@ -376,8 +376,8 @@
 
 #deffunc mapss_try_insert var inner, \
 	int key_hash, int key_len, var key_str, \
-	int value_len, var value_str, \
-	local cap, local entry_i, local data_size, local data_addr, local ok, local t
+	int value_len, var value_str, var entry_i, \
+	local cap, local data_size, local data_addr, local ok, local t
 
 	if mapss_needs_rehashing(inner) {
 		return s_insert_rehash
@@ -427,10 +427,10 @@
 // Insert an entry. key/value must be variables.
 #deffunc mapss_insert_var var inner, \
 	int key_hash, int key_len, var key_str, \
-	int value_len, var value_str, local ok
+	int value_len, var value_str, local entry_i, local ok
 
 	repeat
-		mapss_try_insert inner, key_hash, key_len, key_str, value_len, value_str
+		mapss_try_insert inner, key_hash, key_len, key_str, value_len, value_str, entry_i
 		if stat == s_insert_rehash {
 			mapss_do_rehash inner
 			continue
@@ -440,6 +440,7 @@
 	loop
 	return ok
 
+// Insert an entry. Noop if key already exists.
 #deffunc mapss_insert var inner, str key_str, str value_str, \
 	local key_hash, local key_len, local key_str_var, \
 	local value_len, local value_str_var
@@ -453,6 +454,55 @@
 
 	mapss_insert_var inner, key_hash, key_len, key_str_var, value_len, value_str_var
 	return stat
+
+// Set or insert an entry. key/value must be variables.
+#deffunc mapss_set_var var inner, \
+	int key_hash, int key_len, var key_str, \
+	int value_len, var value_str, \
+	local entry_i, local value_cap, local data_size, local data_addr, local t
+
+	repeat
+		mapss_try_insert inner, key_hash, key_len, key_str, value_len, value_str, entry_i
+		if stat == s_insert_rehash {
+			mapss_do_rehash inner
+			continue
+		}
+		if stat == s_insert_already_exists {
+			// update the value
+			assert mapss_entry_is_active(inner, entry_i)
+
+			value_cap = mapss_get_value_cap(inner, entry_i)
+			if value_len >= value_cap {
+				// alloc new data for value
+				mapss_alloc_data     inner, (value_len + 1) * 2, data_size, data_addr
+				mapss_set_value_cap  inner, entry_i, data_size
+				mapss_set_value_addr inner, entry_i, data_addr
+			}
+
+			// write value data
+			mapss_dup_value     inner, entry_i, t
+			memcpy  t, value_str, value_len
+			poke    t, value_len, 0
+			mapss_set_value_len inner, entry_i, value_len
+		}
+		break
+	loop
+	return
+
+// Set or insert an entry.
+#deffunc mapss_set var inner, str key_str, str value_str, \
+	local key_hash, local key_len, local key_str_var, \
+	local value_len, local value_str_var
+
+	key_str_var = key_str
+	key_len = strlen(key_str)
+	key_hash = mapss_hash_key(key_len, key_str_var)
+
+	value_str_var = value_str
+	value_len = strlen(value_str_var)
+
+	mapss_set_var inner, key_hash, key_len, key_str_var, value_len, value_str_var
+	return
 
 // -----------------------------------------------
 // rehash
@@ -469,7 +519,7 @@
 	return
 
 #deffunc mapss_do_rehash var inner, \
-	local other, local cap, local data_size, local ok, \
+	local other, local cap, local data_size, local ok, local entry_i, \
 	local key_hash, local key_len, local key_str, \
 	local value_len, local value_str
 
@@ -497,7 +547,7 @@
 			value_len = mapss_get_value_len(other, cnt)
 			mapss_dup_value other, cnt, value_str
 
-			mapss_try_insert inner, key_hash, key_len, key_str, value_len, value_str
+			mapss_try_insert inner, key_hash, key_len, key_str, value_len, value_str, entry_i
 			if stat == false {
 				ok = false
 				break
