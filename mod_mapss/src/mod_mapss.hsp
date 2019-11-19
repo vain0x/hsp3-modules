@@ -393,6 +393,10 @@
 	int value_len, var value_str, \
 	local cap, local entry_i, local ok, local t
 
+	if mapss_needs_rehashing(inner) {
+		return false
+	}
+
 	cap = mapss_cap(inner)
 	entry_i = key_hash - 1
 	ok = false
