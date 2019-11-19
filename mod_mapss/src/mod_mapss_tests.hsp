@@ -1,9 +1,14 @@
 // Tests.
 
+#include "hsp3utf.as"
+#addition "WrapCall.as"
+
 #include "../src/mod_mapss.hsp"
 
 #define true 1
 #define false 0
+
+	onerror gosub *l_error
 
 	randomize
 	mapss_init
@@ -43,4 +48,9 @@
 	loop
 
 	dialog "ok"
+	end
+
+*l_error
+
+	assert
 	end
