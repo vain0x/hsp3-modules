@@ -1,0 +1,592 @@
+// str-str map
+
+#ifndef included_mod_mapss_hsp
+#define included_mod_mapss_hsp
+
+#module m_mapss
+
+#define vartype_str 2
+
+#define true 1
+#define false 0
+
+// memory structure
+// meta:
+//      zero
+//      magic_code
+//      mem_len
+//      mem_cap
+//      entry_len
+//      entry_cap
+// entry[]:
+//      key_hash
+//      key_len
+//      key_cap
+//      key_addr
+//      value_len
+//      value_cap
+//      value_addr
+// byte[]
+
+#define s_magic_code_offset 4
+#define s_mem_len_offset 8
+#define s_mem_cap_offset 12
+#define s_entry_len_offset 16
+#define s_entry_cap_offset 20
+#define s_meta_size 24
+
+#define s_key_hash_offset 0
+#define s_key_len_offset 4
+#define s_key_cap_offset 8
+#define s_key_addr_offset 12
+#define s_value_len_offset 16
+#define s_value_cap_offset 20
+#define s_value_addr_offset 24
+#define s_entry_size 28
+
+#define ctype key_hash_addr(%1) (s_meta_size + s_entry_size * (%1) + s_key_hash_offset)
+
+#define ctype key_len_addr(%1) (s_meta_size + s_entry_size * (%1) + s_key_len_offset)
+
+#define ctype key_cap_addr(%1) (s_meta_size + s_entry_size * (%1) + s_key_cap_offset)
+
+#define ctype key_addr_addr(%1) (s_meta_size + s_entry_size * (%1) + s_key_addr_offset)
+
+#define ctype value_len_addr(%1) (s_meta_size + s_entry_size * (%1) + s_value_len_offset)
+
+#define ctype value_cap_addr(%1) (s_meta_size + s_entry_size * (%1) + s_value_cap_offset)
+
+#define ctype value_addr_addr(%1) (s_meta_size + s_entry_size * (%1) + s_value_addr_offset)
+
+#define ctype vec_cap_addr(%1) (s_vec_cap_offset + (%1))
+
+#define ctype vec_data_addr(%1) (s_vec_data_offset + (%1))
+
+#define ctype nondata_size(%1 = cap) (s_meta_size + s_entry_size * (%1))
+
+#const s_mem_min_size (nondata_size(1) + 4)
+
+#define s_magic_code 0x1ac3
+
+#define s_lookup_max 1000
+
+#deffunc mapss_init
+
+	s_hash_base = (rnd(0x10000) << 16) | rnd(0x10000)
+	return
+
+#deffunc mapss_make var inner, int given_cap, int given_data_size, \
+	local mem_size, local cap, local data_size
+
+	// Ensure at least 1 entry to avoid div-by-zero.
+	cap = limit(given_cap, 1)
+
+	data_size = limit(given_data_size, 8)
+
+	mem_size = (nondata_size(cap) + data_size + 0x7) & 0x7ffffff8
+	assert mem_size \ 8 == 0
+
+	inner = ""
+	memexpand inner, mem_size
+	memset    inner, 0, mem_size
+
+	// zero
+	assert lpeek(inner, 0) == 0
+	assert strlen(inner) == 0
+
+	// No extra allocation by default.
+	assert given_cap > 0 || mem_size <= 64
+
+	lpoke inner, s_magic_code_offset, s_magic_code
+	lpoke inner, s_mem_len_offset, nondata_size(cap)
+	lpoke inner, s_mem_cap_offset, mem_size
+
+	lpoke inner, s_entry_cap_offset, cap
+	return
+
+// -----------------------------------------------
+// get/set
+// -----------------------------------------------
+
+#defcfunc mapss_length var inner
+
+	assert vartype(inner) == vartype_str
+	return lpeek(inner, s_entry_len_offset)
+
+#defcfunc mapss_cap var inner
+
+	assert vartype(inner) == vartype_str
+	return lpeek(inner, s_entry_cap_offset)
+
+#defcfunc mapss_get_key_hash var inner, int entry_i
+
+	assert entry_i >= 0
+	assert entry_i < mapss_cap(inner)
+	return lpeek(inner, key_hash_addr(entry_i))
+
+#deffunc mapss_set_key_hash var inner, int entry_i, int key_hash
+
+	assert entry_i >= 0
+	assert entry_i < mapss_cap(inner)
+	lpoke inner, key_hash_addr(entry_i), key_hash
+	return
+
+#defcfunc mapss_get_key_len var inner, int entry_i
+
+	assert entry_i >= 0
+	assert entry_i < mapss_cap(inner)
+	return lpeek(inner, key_len_addr(entry_i))
+
+#deffunc mapss_set_key_len var inner, int entry_i, int key_len
+
+	assert entry_i >= 0
+	assert entry_i < mapss_cap(inner)
+	lpoke inner, key_len_addr(entry_i), key_len
+	return
+
+#defcfunc mapss_get_key_cap var inner, int entry_i
+
+	assert entry_i >= 0
+	assert entry_i < mapss_cap(inner)
+	return lpeek(inner, key_cap_addr(entry_i))
+
+#deffunc mapss_set_key_cap var inner, int entry_i, int key_cap
+
+	assert entry_i >= 0
+	assert entry_i < mapss_cap(inner)
+	lpoke inner, key_cap_addr(entry_i), key_cap
+	return
+
+#defcfunc mapss_get_key_addr var inner, int entry_i, \
+	local addr
+
+	assert entry_i >= 0
+	assert entry_i < mapss_cap(inner)
+	addr = lpeek(inner, key_addr_addr(entry_i))
+	assert addr != 0
+	return addr
+
+#deffunc mapss_set_key_addr var inner, int entry_i, int key_addr
+
+	assert entry_i >= 0
+	assert entry_i < mapss_cap(inner)
+	lpoke inner, key_addr_addr(entry_i), key_addr
+	return
+
+#deffunc mapss_dup_key var inner, int entry_i, var value, \
+	local key_cap, local key_addr
+
+	key_cap = mapss_get_key_cap(inner, entry_i)
+	key_addr = mapss_get_key_addr(inner, entry_i)
+	dupptr value, varptr(inner) + key_addr, key_cap, vartype_str
+	return
+
+#defcfunc mapss_entry_is_active var inner, int entry_i
+
+	assert entry_i >= 0
+	assert entry_i < mapss_cap(inner)
+	return lpeek(inner, value_addr_addr(entry_i)) != 0
+
+#defcfunc mapss_get_value_len var inner, int entry_i
+
+	return lpeek(inner, value_len_addr(entry_i))
+
+#deffunc mapss_set_value_len var inner, int entry_i, int value_len
+
+	lpoke inner, value_len_addr(entry_i), value_len
+	return
+
+#defcfunc mapss_get_value_cap var inner, int entry_i
+
+	return lpeek(inner, value_cap_addr(entry_i))
+
+#deffunc mapss_set_value_cap var inner, int entry_i, int value_cap
+
+	lpoke inner, value_cap_addr(entry_i), value_cap
+	return
+
+#defcfunc mapss_get_value_addr var inner, int entry_i, \
+	local addr
+
+	assert entry_i >= 0
+	assert entry_i < mapss_cap(inner)
+	addr = lpeek(inner, value_addr_addr(entry_i))
+	assert addr != 0
+	return addr
+
+#deffunc mapss_set_value_addr var inner, int entry_i, int value_addr
+
+	assert entry_i >= 0
+	assert entry_i < mapss_cap(inner)
+	lpoke inner, value_addr_addr(entry_i), value_addr
+	return
+
+#deffunc mapss_dup_value var inner, int entry_i, var value, \
+	local value_cap, local value_addr
+
+	value_cap = mapss_get_value_cap(inner, entry_i)
+	value_addr = mapss_get_value_addr(inner, entry_i)
+	dupptr value, varptr(inner) + value_addr, value_cap, vartype_str
+	return
+
+#deffunc mapss_alloc_data var inner, int cap, var size, var addr, \
+	local mem_len, local mem_cap, local new_mem_cap
+
+	assert cap > 0
+
+	size = ((8 + cap) + 7) & 0x7ffffff8
+	assert size \ 8 == 0
+	assert size >= 8 + cap
+
+	mem_len = lpeek(inner, s_mem_len_offset)
+	mem_cap = lpeek(inner, s_mem_cap_offset)
+
+	if mem_len + size > mem_cap {
+		new_mem_cap = mem_cap + mem_cap / 2 + size + 64
+		memexpand inner, new_mem_cap
+		memset    inner, 0, new_mem_cap - mem_cap, mem_cap
+		lpoke inner, s_mem_cap_offset, new_mem_cap
+		mem_cap = new_mem_cap
+	}
+
+	mem_len += size
+	lpoke inner, s_mem_len_offset, mem_len
+
+	addr = mem_len - size
+	return
+
+#defcfunc mapss_is_empty var inner
+
+	return mapss_length(inner) == 0
+
+#defcfunc mapss_load_factor var inner
+
+	return double(mapss_length(inner)) / mapss_cap(inner)
+
+#defcfunc mapss_needs_rehashing var inner
+
+	return mapss_load_factor(inner) >= 0.7
+
+// -----------------------------------------------
+// hash
+// -----------------------------------------------
+
+#defcfunc mapss_hash_key int key_len, var key_str, \
+	local h
+
+	// FNV hash
+
+	h = s_hash_base ^ 2166136261
+
+	repeat key_len / 4
+		h ^= lpeek(key_str, cnt * 4)
+		h *= 2166136261
+	loop
+
+	if key_len \ 4 == 3 {
+		h ^= wpeek(key_str, key_len - 3)
+		h *= 2166136261
+	}
+	if key_len \ 4 == 2 {
+		h ^= wpeek(key_str, key_len - 2)
+		h *= 2166136261
+	}
+	if key_len \ 2 == 1 {
+		h ^= peek(key_str, key_len - 1)
+		h *= 2166136261
+	}
+	if h < 0 {
+		h = -h
+	}
+	assert h >= 0
+	return h
+
+// -----------------------------------------------
+// lookup
+// -----------------------------------------------
+
+#enum s_lookup_found = 1
+#enum s_lookup_empty
+#enum s_lookup_rehash
+
+#deffunc mapss_do_lookup var inner, int key_hash, int key_len, var key_str, var entry_i, \
+	local cap, local t, local status
+
+	cap = mapss_cap(inner)
+	entry_i = key_hash - 1
+	status = s_lookup_rehash
+
+	repeat limit(cap, , s_lookup_max)
+		entry_i = (entry_i + 1) \ cap
+
+		if mapss_entry_is_active(inner, entry_i) == false {
+			status = s_lookup_empty
+			break
+		}
+
+		if mapss_get_key_hash(inner, entry_i) == key_hash {
+			if mapss_get_key_len(inner, entry_i) == key_len {
+				mapss_dup_key inner, entry_i, t
+				if t == key_str {
+					status = s_lookup_found
+					break
+				}
+			}
+		}
+	loop
+
+	if status == s_lookup_rehash { // for debug
+		entry_i = -1
+	}
+	return status
+
+#defcfunc mapss_has var inner, str key_str, \
+	local key_hash, local key_len, local key_str_var, local entry_i
+
+	key_str_var = key_str
+	key_len = strlen(key_str_var)
+	key_hash = mapss_hash_key(key_len, key_str_var)
+
+	mapss_do_lookup inner, key_hash, key_len, key_str_var, entry_i
+	return stat == s_lookup_found
+
+// Make a clone variable of value for the key.
+// Return false if missing.
+#deffunc mapss_dup var inner, str key_str, var value_len, var value, \
+	local key_hash, local key_len, local key_str_var, \
+	local entry_i
+
+	key_str_var = key_str
+	key_len = strlen(key_str_var)
+	key_hash = mapss_hash_key(key_len, key_str_var)
+
+	mapss_do_lookup inner, key_hash, key_len, key_str_var, entry_i
+	if stat != s_lookup_found {
+		dupptr value, varptr(inner), 4, vartype_str
+		value_len = 0
+		return false
+	}
+
+	mapss_dup_value inner, entry_i, value
+	value_len = mapss_get_value_len(inner, entry_i)
+	assert value_len <= mapss_get_value_cap(inner, entry_i)
+	return true
+
+#defcfunc mapss_get var inner, str key_str, \
+	local key_hash, local key_len, local key_str_var, \
+	local entry_i, local value
+
+	key_str_var = key_str
+	key_len = strlen(key_str_var)
+	key_hash = mapss_hash_key(key_len, key_str_var)
+
+	mapss_do_lookup inner, key_hash, key_len, key_str_var, entry_i
+	if stat != s_lookup_found {
+		return "" // default value
+	}
+
+	mapss_dup_value inner, entry_i, value
+	return value
+
+// -----------------------------------------------
+// insert
+// -----------------------------------------------
+
+#enum s_insert_complete = 1
+#enum s_insert_already_exists
+#enum s_insert_rehash
+
+#deffunc mapss_try_insert var inner, \
+	int key_hash, int key_len, var key_str, \
+	int value_len, var value_str, var entry_i, \
+	local cap, local data_size, local data_addr, local ok, local t
+
+	if mapss_needs_rehashing(inner) {
+		return s_insert_rehash
+	}
+
+	cap = mapss_cap(inner)
+	entry_i = key_hash - 1
+
+	mapss_do_lookup inner, key_hash, key_len, key_str, entry_i
+	if stat == s_lookup_rehash {
+		return s_insert_rehash
+	}
+	if stat == s_lookup_found {
+		return s_insert_already_exists
+	}
+
+	assert mapss_cap(inner) == cap
+	assert mapss_entry_is_active(inner, entry_i) == false
+
+	// alloc data for key
+	mapss_alloc_data    inner, key_len + 1, data_size, data_addr
+	mapss_set_key_hash  inner, entry_i, key_hash
+	mapss_set_key_cap   inner, entry_i, data_size
+	mapss_set_key_addr  inner, entry_i, data_addr
+
+	// write key data
+	mapss_dup_key       inner, entry_i, t
+	memcpy  t, key_str, key_len
+	poke    t, key_len, 0
+	mapss_set_key_len   inner, entry_i, key_len
+
+	// alloc data for value
+	mapss_alloc_data     inner, value_len + 1, data_size, data_addr
+	mapss_set_value_cap  inner, entry_i, data_size
+	mapss_set_value_addr inner, entry_i, data_addr
+
+	// write value data
+	mapss_dup_value     inner, entry_i, t
+	memcpy  t, value_str, value_len
+	poke    t, value_len, 0
+	mapss_set_value_len inner, entry_i, value_len
+
+	// increment count
+	lpoke inner, s_entry_len_offset, mapss_length(inner) + 1
+	return s_insert_complete
+
+// Insert an entry. key/value must be variables.
+#deffunc mapss_insert_var var inner, \
+	int key_len, var key_str, \
+	int value_len, var value_str, \
+	local key_hash, local entry_i, local ok
+
+	key_hash = mapss_hash_key(key_len, key_str)
+
+	repeat
+		mapss_try_insert inner, key_hash, key_len, key_str, value_len, value_str, entry_i
+		if stat == s_insert_rehash {
+			mapss_do_rehash inner
+			continue
+		}
+		ok = stat == s_insert_complete
+		break
+	loop
+	return ok
+
+// Insert an entry. Noop if key already exists.
+#deffunc mapss_insert var inner, str key_str, str value_str, \
+	local key_hash, local key_len, local key_str_var, \
+	local value_len, local value_str_var
+
+	key_str_var = key_str
+	key_len = strlen(key_str)
+
+	value_str_var = value_str
+	value_len = strlen(value_str_var)
+
+	mapss_insert_var inner, key_len, key_str_var, value_len, value_str_var
+	return stat
+
+// Set or insert an entry. key/value must be variables.
+#deffunc mapss_set_var var inner, \
+	int key_len, var key_str, \
+	int value_len, var value_str, \
+	local entry_i, local key_hash, \
+	local value_cap, local data_size, local data_addr, local t
+
+	key_hash = mapss_hash_key(key_len, key_str)
+
+	repeat
+		mapss_try_insert inner, key_hash, key_len, key_str, value_len, value_str, entry_i
+		if stat == s_insert_rehash {
+			mapss_do_rehash inner
+			continue
+		}
+		if stat == s_insert_already_exists {
+			// update the value
+			assert mapss_entry_is_active(inner, entry_i)
+
+			value_cap = mapss_get_value_cap(inner, entry_i)
+			if value_len >= value_cap {
+				// alloc new data for value
+				mapss_alloc_data     inner, (value_len + 1) * 2, data_size, data_addr
+				mapss_set_value_cap  inner, entry_i, data_size
+				mapss_set_value_addr inner, entry_i, data_addr
+			}
+
+			// write value data
+			mapss_dup_value     inner, entry_i, t
+			memcpy  t, value_str, value_len
+			poke    t, value_len, 0
+			mapss_set_value_len inner, entry_i, value_len
+		}
+		break
+	loop
+	return
+
+// Set or insert an entry.
+#deffunc mapss_set var inner, str key_str, str value_str, \
+	local key_len, local key_str_var, \
+	local value_len, local value_str_var
+
+	key_str_var = key_str
+	key_len = strlen(key_str)
+
+	value_str_var = value_str
+	value_len = strlen(value_str_var)
+
+	mapss_set_var inner, key_len, key_str_var, value_len, value_str_var
+	return
+
+// -----------------------------------------------
+// rehash
+// -----------------------------------------------
+
+#deffunc mapss_clone var inner, var other, \
+	local mem_cap
+
+	mem_cap = lpeek(inner, s_mem_cap_offset)
+
+	other = ""
+	memexpand other, mem_cap
+	memcpy    other, inner, mem_cap
+	return
+
+#deffunc mapss_do_rehash var inner, \
+	local other, local cap, local data_size, local ok, local entry_i, \
+	local key_hash, local key_len, local key_str, \
+	local value_len, local value_str
+
+	repeat
+		mapss_clone inner, other
+
+		// Extend.
+		data_size = lpeek(other, s_mem_cap_offset) - nondata_size(cap)
+		cap = mapss_cap(inner)
+		cap = limit(cap + cap / 2, 64)
+		mapss_make inner, cap, data_size
+
+		// Import.
+		ok = true
+
+		repeat mapss_cap(other)
+			if mapss_entry_is_active(other, cnt) == false {
+				continue
+			}
+
+			key_hash = mapss_get_key_hash(other, cnt)
+			key_len = mapss_get_key_len(other, cnt)
+			mapss_dup_key other, cnt, key_str
+
+			value_len = mapss_get_value_len(other, cnt)
+			mapss_dup_value other, cnt, value_str
+
+			mapss_try_insert inner, key_hash, key_len, key_str, value_len, value_str, entry_i
+			if stat == false {
+				ok = false
+				break
+			}
+		loop
+
+		if ok {
+			break
+		}
+	loop
+	assert mapss_length(inner) == mapss_length(other)
+	return
+
+#global
+
+#endif
