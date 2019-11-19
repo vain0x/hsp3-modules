@@ -288,24 +288,31 @@
 #defcfunc mapss_hash_key int key_len, var key_str, \
 	local h
 
-	h = s_hash_base ^ 17
+	// FNV hash
+
+	h = s_hash_base ^ 2166136261
 
 	repeat key_len / 4
-		h = ((h << 5) | (h >> 27)) ^ lpeek(key_str, cnt * 4)
+		h ^= lpeek(key_str, cnt * 4)
+		h *= 2166136261
 	loop
 
 	if key_len \ 4 == 3 {
-		h = ((h << 5) | (h >> 27)) ^ wpeek(key_str, key_len - 3)
+		h ^= wpeek(key_str, key_len - 3)
+		h *= 2166136261
 	}
 	if key_len \ 4 == 2 {
-		h = ((h << 5) | (h >> 27)) ^ wpeek(key_str, key_len - 2)
+		h ^= wpeek(key_str, key_len - 2)
+		h *= 2166136261
 	}
 	if key_len \ 2 == 1 {
-		h = ((h << 5) | (h >> 27)) ^ peek(key_str, key_len - 1)
+		h ^= peek(key_str, key_len - 1)
+		h *= 2166136261
 	}
 	if h < 0 {
 		h = -h
 	}
+	assert h >= 0
 	return h
 
 // -----------------------------------------------
