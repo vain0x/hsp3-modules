@@ -20,12 +20,13 @@
 //      entry_cap
 // entry[]:
 //      key_hash
+//      key_len
+//      key_cap
 //      key_addr
+//      value_len
+//      value_cap
 //      value_addr
-// vec[]:
-//      len
-//      cap
-//      byte[]
+// byte[]
 
 #define s_magic_code_offset 4
 #define s_mem_len_offset 8
@@ -35,27 +36,37 @@
 #define s_meta_size 24
 
 #define s_key_hash_offset 0
-#define s_key_addr_offset 4
-#define s_value_addr_offset 8
-#define s_entry_size 12
-
-#define s_vec_len_offset 0
-#define s_vec_cap_offset 4
-#define s_vec_data_offset 8
-
-#const s_mem_min_size (s_meta_size + s_entry_size + s_vec_data_offset + 4)
-
-#define s_magic_code 0x1ac3
+#define s_key_len_offset 4
+#define s_key_cap_offset 8
+#define s_key_addr_offset 12
+#define s_value_len_offset 16
+#define s_value_cap_offset 20
+#define s_value_addr_offset 24
+#define s_entry_size 28
 
 #define ctype key_hash_addr(%1) (s_meta_size + s_entry_size * (%1) + s_key_hash_offset)
 
+#define ctype key_len_addr(%1) (s_meta_size + s_entry_size * (%1) + s_key_len_offset)
+
+#define ctype key_cap_addr(%1) (s_meta_size + s_entry_size * (%1) + s_key_cap_offset)
+
 #define ctype key_addr_addr(%1) (s_meta_size + s_entry_size * (%1) + s_key_addr_offset)
+
+#define ctype value_len_addr(%1) (s_meta_size + s_entry_size * (%1) + s_value_len_offset)
+
+#define ctype value_cap_addr(%1) (s_meta_size + s_entry_size * (%1) + s_value_cap_offset)
 
 #define ctype value_addr_addr(%1) (s_meta_size + s_entry_size * (%1) + s_value_addr_offset)
 
-#define ctype vec_len_addr(%1) (s_vec_len_offset + (%1))
 #define ctype vec_cap_addr(%1) (s_vec_cap_offset + (%1))
+
 #define ctype vec_data_addr(%1) (s_vec_data_offset + (%1))
+
+#define ctype nondata_size(%1 = cap) (s_meta_size + s_entry_size * (%1))
+
+#const s_mem_min_size (nondata_size(1) + 4)
+
+#define s_magic_code 0x1ac3
 
 #define s_lookup_max 64
 
@@ -72,7 +83,7 @@
 
 	data_size = limit(given_data_size, 8)
 
-	mem_size = (s_meta_size + s_entry_size * cap + data_size + 0x7) & 0x7ffffff8
+	mem_size = (nondata_size(cap) + data_size + 0x7) & 0x7ffffff8
 	assert mem_size \ 8 == 0
 
 	inner = ""
@@ -87,7 +98,7 @@
 	assert given_cap > 0 || mem_size <= 64
 
 	lpoke inner, s_magic_code_offset, s_magic_code
-	lpoke inner, s_mem_len_offset, s_meta_size + s_entry_size * cap
+	lpoke inner, s_mem_len_offset, nondata_size(cap)
 	lpoke inner, s_mem_cap_offset, mem_size
 
 	lpoke inner, s_entry_cap_offset, cap
@@ -120,6 +131,32 @@
 	lpoke inner, key_hash_addr(entry_i), key_hash
 	return
 
+#defcfunc mapss_get_key_len var inner, int entry_i
+
+	assert entry_i >= 0
+	assert entry_i < mapss_cap(inner)
+	return lpeek(inner, key_len_addr(entry_i))
+
+#deffunc mapss_set_key_len var inner, int entry_i, int key_len
+
+	assert entry_i >= 0
+	assert entry_i < mapss_cap(inner)
+	lpoke inner, key_len_addr(entry_i), key_len
+	return
+
+#defcfunc mapss_get_key_cap var inner, int entry_i
+
+	assert entry_i >= 0
+	assert entry_i < mapss_cap(inner)
+	return lpeek(inner, key_cap_addr(entry_i))
+
+#deffunc mapss_set_key_cap var inner, int entry_i, int key_cap
+
+	assert entry_i >= 0
+	assert entry_i < mapss_cap(inner)
+	lpoke inner, key_cap_addr(entry_i), key_cap
+	return
+
 #defcfunc mapss_get_key_addr var inner, int entry_i, \
 	local addr
 
@@ -136,41 +173,12 @@
 	lpoke inner, key_addr_addr(entry_i), key_addr
 	return
 
-#defcfunc mapss_get_key_len var inner, int entry_i, \
-	local addr
-
-	assert entry_i >= 0
-	assert entry_i < mapss_cap(inner)
-	addr = mapss_get_key_addr(inner, entry_i)
-	return lpeek(inner, vec_len_addr(addr))
-
-#deffunc mapss_set_key_len var inner, int entry_i, int key_len, \
-	local addr
-
-	assert entry_i >= 0
-	assert entry_i < mapss_cap(inner)
-	addr = mapss_get_key_addr(inner, entry_i)
-	lpoke inner, vec_len_addr(addr), key_len
-	return
-
-#defcfunc mapss_get_key_cap var inner, int entry_i, \
-	local addr
-
-	addr = mapss_get_key_addr(inner, entry_i)
-	return lpeek(inner, vec_cap_addr(addr))
-
-#deffunc mapss_set_key_cap var inner, int entry_i, int key_cap, \
-	local addr
-
-	addr = mapss_get_key_addr(inner, entry_i)
-	lpoke inner, vec_cap_addr(addr), key_cap
-	return
-
 #deffunc mapss_dup_key var inner, int entry_i, var value, \
-	local addr
+	local key_cap, local key_addr
 
-	addr = mapss_get_key_addr(inner, entry_i)
-	mapss_dup_vec inner, addr, value
+	key_cap = mapss_get_key_cap(inner, entry_i)
+	key_addr = mapss_get_key_addr(inner, entry_i)
+	dupptr value, varptr(inner) + key_addr, key_cap, vartype_str
 	return
 
 #defcfunc mapss_entry_is_active var inner, int entry_i
@@ -178,6 +186,24 @@
 	assert entry_i >= 0
 	assert entry_i < mapss_cap(inner)
 	return lpeek(inner, value_addr_addr(entry_i)) != 0
+
+#defcfunc mapss_get_value_len var inner, int entry_i
+
+	return lpeek(inner, value_len_addr(entry_i))
+
+#deffunc mapss_set_value_len var inner, int entry_i, int value_len
+
+	lpoke inner, value_len_addr(entry_i), value_len
+	return
+
+#defcfunc mapss_get_value_cap var inner, int entry_i
+
+	return lpeek(inner, value_cap_addr(entry_i))
+
+#deffunc mapss_set_value_cap var inner, int entry_i, int value_cap
+
+	lpoke inner, value_cap_addr(entry_i), value_cap
+	return
 
 #defcfunc mapss_get_value_addr var inner, int entry_i, \
 	local addr
@@ -195,41 +221,16 @@
 	lpoke inner, value_addr_addr(entry_i), value_addr
 	return
 
-#defcfunc mapss_get_value_len var inner, int entry_i, \
-	local addr
-
-	addr = mapss_get_value_addr(inner, entry_i)
-	return lpeek(inner, vec_len_addr(addr))
-
-#deffunc mapss_set_value_len var inner, int entry_i, int value_len, \
-	local addr
-
-	addr = mapss_get_value_addr(inner, entry_i)
-	lpoke inner, vec_len_addr(addr), value_len
-	return
-
-#defcfunc mapss_get_value_cap var inner, int entry_i, \
-	local addr
-
-	addr = mapss_get_value_addr(inner, entry_i)
-	return lpeek(inner, vec_cap_addr(addr))
-
-#deffunc mapss_set_value_cap var inner, int entry_i, int value_cap, \
-	local addr
-
-	addr = mapss_get_value_addr(inner, entry_i)
-	lpoke inner, vec_cap_addr(addr), value_cap
-	return
-
 #deffunc mapss_dup_value var inner, int entry_i, var value, \
-	local addr
+	local value_cap, local value_addr
 
-	addr = mapss_get_value_addr(inner, entry_i)
-	mapss_dup_vec inner, addr, value
+	value_cap = mapss_get_value_cap(inner, entry_i)
+	value_addr = mapss_get_value_addr(inner, entry_i)
+	dupptr value, varptr(inner) + value_addr, value_cap, vartype_str
 	return
 
-#deffunc mapss_alloc_vec var inner, int cap, \
-	local size, local addr, local mem_len, local mem_cap, local new_mem_cap
+#deffunc mapss_alloc_data var inner, int cap, var size, var addr, \
+	local mem_len, local mem_cap, local new_mem_cap
 
 	assert cap > 0
 
@@ -248,27 +249,10 @@
 		mem_cap = new_mem_cap
 	}
 
-	addr = mem_len
 	mem_len += size
 	lpoke inner, s_mem_len_offset, mem_len
 
-	lpoke inner, vec_len_addr(addr), 0
-	lpoke inner, vec_cap_addr(addr), cap
-	return addr
-
-#deffunc mapss_dup_vec var inner, int addr, var value, \
-	local cap
-
-	assert addr >= s_meta_size + s_entry_size * mapss_cap(inner)
-	assert addr < lpeek(inner, s_mem_cap_offset)
-	if addr <= 0 {
-		assert
-		dupptr value, varptr(inner), 4, vartype_str
-		return
-	}
-
-	cap = lpeek(inner, vec_cap_addr(addr))
-	dupptr value, varptr(inner) + vec_data_addr(addr), cap, vartype_str
+	addr = mem_len - size
 	return
 
 #defcfunc mapss_is_empty var inner
@@ -391,7 +375,7 @@
 #deffunc mapss_try_insert var inner, \
 	int key_hash, int key_len, var key_str, \
 	int value_len, var value_str, \
-	local cap, local entry_i, local ok, local t
+	local cap, local entry_i, local data_size, local data_addr, local ok, local t
 
 	if mapss_needs_rehashing(inner) {
 		return false
@@ -401,7 +385,7 @@
 	entry_i = key_hash - 1
 	ok = false
 
-	// Find the nearest vacant slot.
+	// Find the nearest vacant entry.
 	repeat limit(cap, , s_lookup_max)
 		entry_i = (entry_i + 1) \ cap
 
@@ -420,10 +404,11 @@
 	assert mapss_cap(inner) == cap
 	assert mapss_entry_is_active(inner, entry_i) == false
 
-	// alloc slot for key
-	mapss_alloc_vec     inner, key_len + 1
-	mapss_set_key_addr  inner, entry_i, stat
+	// alloc data for key
+	mapss_alloc_data    inner, key_len + 1, data_size, data_addr
 	mapss_set_key_hash  inner, entry_i, key_hash
+	mapss_set_key_cap   inner, entry_i, data_size
+	mapss_set_key_addr  inner, entry_i, data_addr
 
 	// write key data
 	mapss_dup_key       inner, entry_i, t
@@ -431,9 +416,10 @@
 	poke    t, key_len, 0
 	mapss_set_key_len   inner, entry_i, key_len
 
-	// alloc slot for value
-	mapss_alloc_vec         inner, value_len + 1
-	mapss_set_value_addr    inner, entry_i, stat
+	// alloc data for value
+	mapss_alloc_data     inner, value_len + 1, data_size, data_addr
+	mapss_set_value_cap  inner, entry_i, data_size
+	mapss_set_value_addr inner, entry_i, data_addr
 
 	// write value data
 	mapss_dup_value     inner, entry_i, t
