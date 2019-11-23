@@ -1,7 +1,12 @@
 hsptmp
 obj
+*.dpm
 packfile
 start.ax
+
+
+
+*_bench.exe
 
 
 

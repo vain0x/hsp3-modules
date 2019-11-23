@@ -1,0 +1,93 @@
+// Benchmark.
+
+#packopt name "mod_mapss_bench"
+
+#include "mod_mapss.hsp"
+
+// For d3timer.
+#include "d3m.hsp"
+
+#define true 1
+#define false 0
+
+	data_sizes = 10, 250, 700, 3000
+
+	font "MS Gothic", 12
+	pos 8, 8
+
+	repeat length(data_sizes)
+		data_size = data_sizes(cnt)
+		color
+		mes "data_size = " + data_size
+
+		iter_count = 3000 * 3 / data_size
+		ok = true
+	
+		randomize
+		sdim keys
+		sdim values
+		repeat data_size
+			keys(cnt) = str(rnd(0x10000))
+			values(cnt) = str(rnd(0x10000))
+		loop
+	
+		color , 128
+		mes "mapss insert+get"
+		start_time = d3timer()
+		repeat iter_count
+			sdim m
+			mapss_make m
+	
+			repeat data_size
+				mapss_insert m, keys(cnt), values(cnt)
+			loop
+	
+			repeat data_size
+				value = mapss_get(m, keys(cnt))
+				ok = ok && value != values(cnt)
+			loop
+		loop
+		end_time = d3timer()
+		mes "ave. " + double(end_time - start_time) / iter_count
+		mes ""
+
+		color 128
+		mes "assoc insert+get"
+		start_time = d3timer()
+		repeat iter_count
+			sdim map_keys
+			sdim map_values
+			map_count = 0
+	
+			repeat data_size
+				map_keys(map_count) = keys(cnt)
+				map_values(map_count) = values(cnt)
+				map_count++
+			loop
+	
+			repeat data_size
+				i = cnt
+				found = -1
+				repeat map_count
+					if map_keys(cnt) == keys(i) {
+						found = i
+						break
+					}
+				loop
+	
+				if found < 0 {
+					ok = false
+				} else {
+					ok = values(found) == values(cnt)
+				}
+			loop
+		loop
+		end_time = d3timer()
+		mes "ave. " + double(end_time - start_time) / iter_count
+
+		color
+		mes "----------------------"
+	loop
+
+	color
+	mes "finish"
