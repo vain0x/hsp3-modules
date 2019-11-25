@@ -1,15 +1,17 @@
-// Benchmark.
+// ベンチマーク
+// 連想配列にデータを追加して、各データを検索する、という処理の時間を測る。
 
 #packopt name "mod_mapss_bench"
 
 #include "mod_mapss.hsp"
 
-// For d3timer.
+// d3timer のため
 #include "d3m.hsp"
 
 #define true 1
 #define false 0
 
+	// 試験する連想配列の要素数のリスト。筆者のマシンでは 700 のとき両者の性能が拮抗する。
 	data_sizes = 10, 250, 700, 3000
 
 	font "MS Gothic", 12
@@ -20,9 +22,10 @@
 		color
 		mes "data_size = " + data_size
 
+		// 処理を繰り返す回数。
 		iter_count = 3000 * 3 / data_size
 		ok = true
-	
+
 		randomize
 		sdim keys
 		sdim values
@@ -30,18 +33,18 @@
 			keys(cnt) = str(rnd(0x10000))
 			values(cnt) = str(rnd(0x10000))
 		loop
-	
+
 		color , 128
 		mes "mapss insert+get"
 		start_time = d3timer()
 		repeat iter_count
 			sdim m
 			mapss_make m
-	
+
 			repeat data_size
 				mapss_insert m, keys(cnt), values(cnt)
 			loop
-	
+
 			repeat data_size
 				value = mapss_get(m, keys(cnt))
 				ok = ok && value != values(cnt)
@@ -58,13 +61,13 @@
 			sdim map_keys
 			sdim map_values
 			map_count = 0
-	
+
 			repeat data_size
 				map_keys(map_count) = keys(cnt)
 				map_values(map_count) = values(cnt)
 				map_count++
 			loop
-	
+
 			repeat data_size
 				i = cnt
 				found = -1
@@ -74,7 +77,7 @@
 						break
 					}
 				loop
-	
+
 				if found < 0 {
 					ok = false
 				} else {
