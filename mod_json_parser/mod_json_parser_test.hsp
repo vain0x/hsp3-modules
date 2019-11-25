@@ -1,8 +1,8 @@
 // JSON パーサーのテスト
 
 // mod_json_parse_tests 以下にある各 JSON ファイルをパースして、
-// パース結果を _snapshot.txt ファイルに出力します。
-// パース結果が正しいかは目視確認です。(Git の差分が出なければ問題ないはずです。)
+// パース結果を _snapshot.txt ファイルに出力する。
+// パース結果が正しいかは目視で確認すること。(Git の差分が出なければ問題ない。)
 
 #include "hsp3utf.as"
 #addition "WrapCall.as"

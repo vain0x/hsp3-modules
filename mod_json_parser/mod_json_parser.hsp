@@ -7,7 +7,7 @@
 
 #module m_json_parser
 
-// EOF (文字列の末尾) に到達した
+// EOF (文字列の末尾) に到達したとき
 #enum global json_parser_event_eof = 1
 
 // 空白、コメント、解釈不能な文字など
@@ -178,23 +178,27 @@
 // text, text_len, event_kinds, event_lens, event_count, error_kinds, error_indexes, error_count
 //
 // var text: パースする JSON 文字列が入った変数
-// int text_len: text の長さ (strlen(text) より小さい値を指定すると一部だけパースされる。)
+// int text_len: text の長さ
 //
 // array event_kinds: パース結果として各イベントの種類を受け取る配列変数
 // array event_lens: パース結果として各イベントの長さを受け取る配列変数
 // var event_count: パース結果としてイベントの個数を受け取る変数
 //
-// array error_kinds: パース結果として各エラーの種類を受け取る配列変数 (注意: 未実装なためすべて0になります)
+// array error_kinds: パース結果として各エラーの種類を受け取る配列変数
 // array error_indexes: パース結果として各エラーの位置を受け取る配列変数
 // var error_count: パース結果としてエラーの個数を受け取る変数
 //
 // %inst
 // 文字列を JSON としてパース (構文解析) して、イベントやエラーを報告します。
 //
+// イベントの種類は定数 json_parser_event_* で定義されています。
+//
 // イベントの発生位置は event_lens を足していくと分かります。
 // (最初のイベントは位置 0 で起こり、次は位置 event_lens(0)、
 //  その次は位置 (event_lens(0) + event_lens(1)), ... で起こります。)
 // event_lens の長さの総和は、text_len に一致します。
+//
+// エラーの種類は定数 json_parser_error_* で定義されています。
 #deffunc json_parser_parse \
 	var text, int text_len, \
 	array event_kinds, array event_lens, var event_count, \
