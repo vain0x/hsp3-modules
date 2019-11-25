@@ -1,0 +1,198 @@
+// JSON パーサーのテスト
+
+// mod_json_parse_tests 以下にある各 JSON ファイルをパースして、
+// パース結果を _snapshot.txt ファイルに出力します。
+// パース結果が正しいかは目視確認です。(Git の差分が出なければ問題ないはずです。)
+
+#include "hsp3utf.as"
+#addition "WrapCall.as"
+
+#include "mod_json_parser.hsp"
+
+#define ctype jpe_is_start_node(%1) \
+	((%1) == json_parser_event_string_start \
+	|| (%1) == json_parser_event_array_start \
+	|| (%1) == json_parser_event_object_start)
+
+#define ctype jpe_is_end_node(%1) \
+	((%1) == json_parser_event_string_end \
+	|| (%1) == json_parser_event_array_end \
+	|| (%1) == json_parser_event_object_end)
+
+	s_work_dir = dir_cur
+
+	s_spaces = "                                                               "
+
+	sdim s_event_names
+	s_event_names(json_parser_event_eof) = "EOF"
+	s_event_names(json_parser_event_skip) = "SKIP"
+	s_event_names(json_parser_event_comma) = "COMMA"
+	s_event_names(json_parser_event_colon) = "COLON"
+	s_event_names(json_parser_event_array_start) = "ARRAY_START"
+	s_event_names(json_parser_event_array_end) = "ARRAY_END"
+	s_event_names(json_parser_event_object_start) = "OBJECT_START"
+	s_event_names(json_parser_event_object_end) = "OBJECT_END"
+	s_event_names(json_parser_event_null) = "NULL"
+	s_event_names(json_parser_event_true) = "TRUE"
+	s_event_names(json_parser_event_false) = "FALSE"
+	s_event_names(json_parser_event_number) = "NUMBER"
+	s_event_names(json_parser_event_string_start) = "STRING_START"
+	s_event_names(json_parser_event_string_verbatim) = "STRING_VERBATIM"
+	s_event_names(json_parser_event_string_esape) = "STRING_ESAPE"
+	s_event_names(json_parser_event_string_end) = "STRING_END"
+	s_event_names(json_parser_event_item_start) = "ITEM_START"
+	s_event_names(json_parser_event_item_end) = "ITEM_END"
+	s_event_names(json_parser_event_pair_start) = "PAIR_START"
+	s_event_names(json_parser_event_pair_end) = "PAIR_END"
+
+	sdim s_error_names
+	s_error_names(json_parser_error_bug) = "BUG"
+	s_error_names(json_parser_error_unexpected_eof) = "UNEXPECTED_EOF"
+	s_error_names(json_parser_error_unexpected_char) = "UNEXPECTED_CHAR"
+	s_error_names(json_parser_error_expected_eof) = "EXPECTED_EOF"
+	s_error_names(json_parser_error_expected_comma_or_bracket_r) = "EXPECTED_COMMA_OR_BRACKET_R"
+	s_error_names(json_parser_error_expected_comma_or_brace_r) = "EXPECTED_COMMA_OR_BRACE_R"
+	s_error_names(json_parser_error_expected_colon) = "EXPECTED_COLON"
+	s_error_names(json_parser_error_expected_null) = "EXPECTED_NULL"
+	s_error_names(json_parser_error_expected_true) = "EXPECTED_TRUE"
+	s_error_names(json_parser_error_expected_false) = "EXPECTED_FALSE"
+	s_error_names(json_parser_error_bad_unicode_escape) = "BAD_UNICODE_ESCAPE"
+	s_error_names(json_parser_error_unknown_escape) = "UNKNOWN_ESCAPE"
+
+	dim s_event_kinds
+	dim s_event_lens
+	s_event_count = 0
+
+	dim s_error_kinds
+	dim s_error_indexes
+	s_error_count = 0
+
+	sdim s_snapshot
+
+	sdim s_test_files
+	sdim s_test_file
+	sdim s_text
+
+	// テストファイルを列挙する。
+	chdir "mod_json_parser_tests"
+	dirlist s_test_files, "*.json"
+	s_test_count = stat
+	assert s_test_count >= 0
+
+	repeat s_test_count
+		notesel s_test_files
+		noteget s_test_file, cnt
+		noteunsel
+		s_test_file_name_len = strlen(s_test_file)
+
+		// テストの名前をファイル名から逆算する。
+		s_test_name_len = s_test_file_name_len - strlen(".json")
+		s_test_name = strmid(s_test_file, 0, s_test_name_len)
+
+		s_snapshot_file = s_test_name + "_snapshot.txt"
+
+		// テストファイルをロードする。
+		notesel s_text
+		noteload s_test_file
+		noteunsel
+		s_text_len = strlen(s_text)
+
+		// パースする。
+		logmes strf("test: %s", s_test_name)
+
+		json_parser_parse s_text, s_text_len, s_event_kinds, s_event_lens, s_event_count, s_error_kinds, s_error_indexes, s_error_count
+
+		// 基本的な事後条件を検査する。
+		assert s_event_count >= 0
+		assert length(s_event_kinds) >= s_event_count
+		assert length(s_event_lens) >= s_event_count
+
+		assert s_error_count >= 0
+		assert length(s_error_kinds) >= s_error_count
+		assert length(s_error_indexes) >= s_error_count
+
+		// パース結果を文字列に書き起こす。
+		s_snapshot = ""
+		s_snapshot_index = 0
+		s_text_index = 0
+		s_event_index = 0
+		s_error_index = 0
+		s_depth = 0
+
+		s_snapshot = strf("[TEST]\n%s\n", s_test_name)
+
+		s_snapshot += "\n[EVENTS]\n"
+		s_text_index = 0
+		repeat s_event_count
+			// 字下げ
+			if jpe_is_end_node(s_event_kinds(cnt)) {
+				s_depth = limit(s_depth - 1, 0)
+			}
+			s_indent = strmid(s_spaces, 0, s_depth * 2)
+			if jpe_is_start_node(s_event_kinds(cnt)) {
+				s_depth++
+			}
+
+			// イベントの名前
+			s_name = s_event_names(s_event_kinds(cnt))
+
+			// イベントの長さと範囲
+			s_len = s_event_lens(cnt)
+			s_start = s_text_index
+			s_end = s_text_index + s_len
+			s_word = strmid(s_text, s_start, s_end - s_start)
+
+			// スナップショットに追加
+			s_snapshot += strf("%s%s(%d) `%s`\n", s_indent, s_name, s_len, s_word)
+			s_text_index += s_len
+		loop
+
+		// ちょうど末尾までパースしたことを検査
+		if s_text_index != s_text_len {
+			s_snapshot += strf("WARN: s_text_index = %d, s_text_len = %d", s_text_index, s_text_len)
+		}
+
+		if s_error_count > 0 {
+			s_snapshot += "\n[JSON]\n"
+
+			s_text_index = 0
+			s_text_next = 0
+			s_error_index = 0
+			repeat
+				assert s_text_index <= s_text_len && s_error_index <= s_error_count
+				if s_text_index == s_text_len && s_error_index == s_error_count {
+					break
+				}
+
+				// エラー位置に記号を挿入する。
+				if s_error_index < s_error_count {
+					if s_text_index == s_error_indexes(s_error_index) {
+						s_snapshot += strf("<!%s!>", s_error_names(s_error_kinds(s_error_index)))
+						s_error_index++
+						continue
+					}
+				}
+
+				// JSON テキストをスナップショットにコピーしていく。
+				if s_error_index < s_error_count {
+					s_text_next = s_error_indexes(s_error_index)
+				} else {
+					s_text_next = s_text_len
+				}
+
+				s_snapshot += strmid(s_text, s_text_index, s_text_next - s_text_index)
+				s_text_index = s_text_next
+			loop
+		}
+
+		s_snapshot += "\n[EOF]\n"
+
+		// スナップショットをファイルに書き込む。
+		notesel s_snapshot
+		notesave s_snapshot_file
+		noteunsel
+	loop
+
+	chdir s_work_dir
+	mes "finish"
+	logmes "finish"

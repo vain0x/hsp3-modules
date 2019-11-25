@@ -1,0 +1,28 @@
+[TEST]
+error_string_unclosed_complex
+
+[EVENTS]
+ARRAY_START(1) `[`
+  SKIP(6) `
+    `
+  STRING_START(1) `"`
+  STRING_END(0) ``
+  SKIP(6) `
+    `
+  COMMA(1) `,`
+  SKIP(1) ` `
+  NUMBER(1) `1`
+  SKIP(2) `
+`
+ARRAY_END(1) `]`
+SKIP(2) `
+`
+EOF(0) ``
+
+[JSON]
+[
+    "<!UNEXPECTED_CHAR!>
+    , 1
+]
+
+[EOF]

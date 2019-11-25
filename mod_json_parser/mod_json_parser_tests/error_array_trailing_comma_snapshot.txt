@@ -1,0 +1,16 @@
+[TEST]
+error_array_trailing_comma
+
+[EVENTS]
+ARRAY_START(1) `[`
+  NUMBER(1) `1`
+  COMMA(1) `,`
+  SKIP(1) `]`
+  SKIP(2) `
+`
+  EOF(0) ``
+
+[JSON]
+[1,<!UNEXPECTED_CHAR!>]
+<!UNEXPECTED_EOF!>
+[EOF]

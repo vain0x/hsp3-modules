@@ -1,0 +1,12 @@
+[TEST]
+array_singleton
+
+[EVENTS]
+ARRAY_START(1) `[`
+  NUMBER(1) `0`
+ARRAY_END(1) `]`
+SKIP(2) `
+`
+EOF(0) ``
+
+[EOF]

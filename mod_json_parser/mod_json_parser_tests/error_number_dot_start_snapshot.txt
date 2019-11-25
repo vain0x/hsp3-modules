@@ -1,0 +1,14 @@
+[TEST]
+error_number_dot_start
+
+[EVENTS]
+SKIP(1) `.`
+NUMBER(1) `1`
+SKIP(2) `
+`
+EOF(0) ``
+
+[JSON]
+<!UNEXPECTED_CHAR!>.1
+
+[EOF]

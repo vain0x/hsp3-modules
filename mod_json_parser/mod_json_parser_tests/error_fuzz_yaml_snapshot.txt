@@ -1,0 +1,179 @@
+[TEST]
+error_fuzz_yaml
+
+[EVENTS]
+SKIP(3) `# h`
+TRUE(1) `t`
+TRUE(1) `t`
+SKIP(2) `ps`
+SKIP(1) `:`
+SKIP(4) `//gi`
+TRUE(1) `t`
+SKIP(11) `hub.com/vai`
+NULL(1) `n`
+NUMBER(1) `0`
+SKIP(14) `x/server/blob/`
+NUMBER(1) `4`
+SKIP(1) `b`
+NUMBER(1) `0`
+SKIP(1) `b`
+NUMBER(6) `635218`
+SKIP(7) `/docker`
+SKIP(14) `-compose.yml
+`
+SKIP(8) `
+versio`
+NULL(1) `n`
+SKIP(1) `:`
+SKIP(1) ` `
+STRING_START(1) `"`
+  STRING_VERBATIM(1) `3`
+STRING_END(1) `"`
+SKIP(12) `
+
+services`
+SKIP(1) `:`
+SKIP(8) `
+  # <h`
+TRUE(1) `t`
+TRUE(1) `t`
+SKIP(2) `ps`
+SKIP(1) `:`
+SKIP(4) `//gi`
+TRUE(1) `t`
+SKIP(11) `hub.com/vai`
+NULL(1) `n`
+NUMBER(1) `0`
+SKIP(17) `x/share>
+  share`
+SKIP(1) `:`
+SKIP(11) `
+    build`
+SKIP(1) `:`
+SKIP(20) ` lib/share
+
+  # <h`
+TRUE(1) `t`
+TRUE(1) `t`
+SKIP(2) `ps`
+SKIP(1) `:`
+SKIP(4) `//gi`
+TRUE(1) `t`
+SKIP(11) `hub.com/vai`
+NULL(1) `n`
+NUMBER(1) `0`
+SKIP(3) `x/h`
+TRUE(1) `t`
+TRUE(1) `t`
+SKIP(2) `ps`
+SKIP(10) `-portal>
+`
+SKIP(3) `  h`
+TRUE(1) `t`
+TRUE(1) `t`
+SKIP(2) `ps`
+SKIP(10) `-portal:
+`
+SKIP(9) `    build`
+SKIP(1) `:`
+SKIP(6) ` lib/h`
+TRUE(1) `t`
+TRUE(1) `t`
+SKIP(2) `ps`
+SKIP(9) `-portal
+`
+SKIP(7) `    por`
+TRUE(1) `t`
+SKIP(1) `s`
+SKIP(1) `:`
+SKIP(8) `
+      `
+SKIP(11) `- "80:80"
+`
+SKIP(6) `      `
+SKIP(13) `- "443:443"
+`
+SKIP(6) `    li`
+NULL(1) `n`
+SKIP(2) `ks`
+SKIP(1) `:`
+SKIP(8) `
+      `
+SKIP(11) `- "share"
+`
+SKIP(7) `    res`
+TRUE(1) `t`
+SKIP(2) `ar`
+TRUE(1) `t`
+SKIP(1) `:`
+SKIP(1) ` `
+STRING_START(1) `"`
+  STRING_VERBATIM(6) `always`
+STRING_END(1) `"`
+SKIP(7) `
+    e`
+NULL(1) `n`
+SKIP(4) `viro`
+NULL(1) `n`
+SKIP(2) `me`
+NULL(1) `n`
+TRUE(1) `t`
+SKIP(1) `:`
+SKIP(15) `
+      DOMAINS`
+SKIP(1) `:`
+SKIP(1) ` `
+STRING_START(1) `"`
+  STRING_VERBATIM(34) `share.vain0x.tk -> http://share:80`
+STRING_END(1) `"`
+SKIP(13) `
+      STAGE`
+SKIP(1) `:`
+SKIP(1) ` `
+STRING_START(1) `"`
+  STRING_VERBATIM(5) `local`
+STRING_END(1) `"`
+SKIP(13) `
+    # STAGE`
+SKIP(1) `:`
+SKIP(1) ` `
+STRING_START(1) `"`
+  STRING_VERBATIM(10) `production`
+STRING_END(1) `"`
+SKIP(19) `
+    # FORCE_RENEW`
+SKIP(1) `:`
+SKIP(1) ` `
+STRING_START(1) `"`
+  STRING_VERBATIM(4) `true`
+STRING_END(1) `"`
+SKIP(2) `
+`
+EOF(0) ``
+
+[JSON]
+<!UNEXPECTED_CHAR!># h<!EXPECTED_TRUE!>t<!EXPECTED_EOF!>t<!UNEXPECTED_CHAR!>ps<!EXPECTED_EOF!>:<!UNEXPECTED_CHAR!>//gi<!EXPECTED_EOF!>t<!UNEXPECTED_CHAR!>hub.com/vai<!EXPECTED_EOF!>n<!EXPECTED_EOF!>0<!UNEXPECTED_CHAR!>x/server/blob/<!EXPECTED_EOF!>4<!UNEXPECTED_CHAR!>b<!EXPECTED_EOF!>0<!UNEXPECTED_CHAR!>b<!EXPECTED_EOF!>635218<!UNEXPECTED_CHAR!>/docker<!EXPECTED_EOF!>-compose.yml
+
+<!UNEXPECTED_CHAR!>versio<!EXPECTED_EOF!>n<!EXPECTED_EOF!>: <!EXPECTED_EOF!>"3"
+
+<!UNEXPECTED_CHAR!>services<!EXPECTED_EOF!>:
+  <!UNEXPECTED_CHAR!># <h<!EXPECTED_EOF!>t<!EXPECTED_EOF!>t<!UNEXPECTED_CHAR!>ps<!EXPECTED_EOF!>:<!UNEXPECTED_CHAR!>//gi<!EXPECTED_EOF!>t<!UNEXPECTED_CHAR!>hub.com/vai<!EXPECTED_EOF!>n<!EXPECTED_EOF!>0<!UNEXPECTED_CHAR!>x/share>
+  share<!EXPECTED_EOF!>:
+    <!UNEXPECTED_CHAR!>build<!EXPECTED_EOF!>: <!UNEXPECTED_CHAR!>lib/share
+
+  # <h<!EXPECTED_EOF!>t<!EXPECTED_EOF!>t<!UNEXPECTED_CHAR!>ps<!EXPECTED_EOF!>:<!UNEXPECTED_CHAR!>//gi<!EXPECTED_EOF!>t<!UNEXPECTED_CHAR!>hub.com/vai<!EXPECTED_EOF!>n<!EXPECTED_EOF!>0<!UNEXPECTED_CHAR!>x/h<!EXPECTED_EOF!>t<!EXPECTED_EOF!>t<!UNEXPECTED_CHAR!>ps<!EXPECTED_EOF!>-portal>
+  <!UNEXPECTED_CHAR!>h<!EXPECTED_EOF!>t<!EXPECTED_EOF!>t<!UNEXPECTED_CHAR!>ps<!EXPECTED_EOF!>-portal:
+    <!UNEXPECTED_CHAR!>build<!EXPECTED_EOF!>: <!UNEXPECTED_CHAR!>lib/h<!EXPECTED_EOF!>t<!EXPECTED_EOF!>t<!UNEXPECTED_CHAR!>ps<!EXPECTED_EOF!>-portal
+    <!UNEXPECTED_CHAR!>por<!EXPECTED_EOF!>t<!UNEXPECTED_CHAR!>s<!EXPECTED_EOF!>:
+      <!EXPECTED_EOF!>- "80:80"
+      <!EXPECTED_EOF!>- "443:443"
+    <!UNEXPECTED_CHAR!>li<!EXPECTED_EOF!>n<!UNEXPECTED_CHAR!>ks<!EXPECTED_EOF!>:
+      <!EXPECTED_EOF!>- "share"
+    <!UNEXPECTED_CHAR!>res<!EXPECTED_EOF!>t<!UNEXPECTED_CHAR!>ar<!EXPECTED_EOF!>t<!EXPECTED_EOF!>: <!EXPECTED_EOF!>"always"
+    <!UNEXPECTED_CHAR!>e<!EXPECTED_EOF!>n<!UNEXPECTED_CHAR!>viro<!EXPECTED_EOF!>n<!UNEXPECTED_CHAR!>me<!EXPECTED_EOF!>n<!EXPECTED_EOF!>t<!EXPECTED_EOF!>:
+      <!UNEXPECTED_CHAR!>DOMAINS<!EXPECTED_EOF!>: <!EXPECTED_EOF!>"share.vain0x.tk -> http://share:80"
+      <!UNEXPECTED_CHAR!>STAGE<!EXPECTED_EOF!>: <!EXPECTED_EOF!>"local"
+    <!UNEXPECTED_CHAR!># STAGE<!EXPECTED_EOF!>: <!EXPECTED_EOF!>"production"
+    <!UNEXPECTED_CHAR!># FORCE_RENEW<!EXPECTED_EOF!>: <!EXPECTED_EOF!>"true"
+
+[EOF]

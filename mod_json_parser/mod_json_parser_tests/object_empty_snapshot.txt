@@ -1,0 +1,11 @@
+[TEST]
+object_empty
+
+[EVENTS]
+OBJECT_START(1) `{`
+OBJECT_END(1) `}`
+SKIP(2) `
+`
+EOF(0) ``
+
+[EOF]

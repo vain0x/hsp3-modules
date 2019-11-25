@@ -1,0 +1,14 @@
+[TEST]
+error_string_unclosed
+
+[EVENTS]
+STRING_START(1) `"`
+STRING_END(0) ``
+SKIP(2) `
+`
+EOF(0) ``
+
+[JSON]
+"<!UNEXPECTED_CHAR!>
+
+[EOF]

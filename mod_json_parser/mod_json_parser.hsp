@@ -1,0 +1,874 @@
+// JSON パーサー
+// 参考: [JSON](https://www.json.org/)
+// LICENSE: PUBLIC DOMAIN
+
+#ifndef included_mod_json_parser_hsp
+#define included_mod_json_parser_hsp
+
+#module m_json_parser
+
+// EOF (文字列の末尾) に到達した
+#enum global json_parser_event_eof = 1
+
+// 空白、コメント、解釈不能な文字など
+#enum global json_parser_event_skip
+
+// ','
+#enum global json_parser_event_comma
+
+// ':'
+#enum global json_parser_event_colon
+
+// '['
+#enum global json_parser_event_array_start
+
+// ']'
+#enum global json_parser_event_array_end
+
+// '{'
+#enum global json_parser_event_object_start
+
+// '}'
+#enum global json_parser_event_object_end
+
+// 'null'
+#enum global json_parser_event_null
+
+// 'true'
+#enum global json_parser_event_true
+
+// 'false'
+#enum global json_parser_event_false
+
+// 数値 (e.g. 3.14, -1e-9, etc.)
+#enum global json_parser_event_number
+
+// 文字列リテラルの開始 ('"')
+#enum global json_parser_event_string_start
+
+// 文字列リテラルの内部で、エスケープシーケンスのない部分
+#enum global json_parser_event_string_verbatim
+
+// 文字列リテラルの内部で、1個のエスケープシーケンス
+#enum global json_parser_event_string_esape
+
+// 文字列リテラルの終了 ('"')
+#enum global json_parser_event_string_end
+
+// 配列の要素の開始 ('[' や ',' の直後)
+#enum global json_parser_event_item_start
+
+// 配列の要素の終了 (']' や ',' の直前)
+#enum global json_parser_event_item_end
+
+// オブジェクトのエントリーの開始 ('{' や ',' の直後)
+#enum global json_parser_event_pair_start
+
+// オブジェクトのエントリーの終了 ('}' や ',' の直前)
+#enum global json_parser_event_pair_end
+
+// JSON パーサーのバグと思われるエラー。
+#enum global json_parser_error_bug = 1
+
+// JSON が途中で切れているエラー。
+#enum global json_parser_error_unexpected_eof
+
+// JSON として解釈できない文字が出現している。
+#enum global json_parser_error_unexpected_char
+
+// JSON としての解釈が終了した後に続きがある。
+#enum global json_parser_error_expected_eof
+
+// ',' または ']' が出現すべき位置に、出現していない。
+#enum global json_parser_error_expected_comma_or_bracket_r
+
+// ',' または '}' が出現すべき位置に、出現していない。
+#enum global json_parser_error_expected_comma_or_brace_r
+
+// ':' が出現すべき位置に、出現していない。
+#enum global json_parser_error_expected_colon
+
+// 'null' が期待された。
+#enum global json_parser_error_expected_null
+
+// 'true' が期待された。
+#enum global json_parser_error_expected_true
+
+// 'false' が期待された。
+#enum global json_parser_error_expected_false
+
+// '\uHHHH' 形式のエスケープに16進数でない文字が含まれている。
+#enum global json_parser_error_bad_unicode_escape
+
+// '\' の後にエスケープシーケンスとして解釈できない文字が出現している。
+#enum global json_parser_error_unknown_escape
+
+#define true 1
+#define false 0
+
+// 最も外側の値の前
+#enum state_before_root = 1
+
+// 最も外側の値の後
+#enum state_after_root
+
+// 配列の入り口
+#enum state_array_start
+
+// 配列の要素の前
+#enum state_before_item
+
+// 配列の要素の後
+#enum state_after_item
+
+// オブジェクトの入り口
+#enum state_object_start
+
+// オブジェクトのペアの前
+#enum state_before_pair
+
+// オブジェクトのキーの後、コロンの前
+#enum state_after_key
+
+// オブジェクトのコロンの後、値の前
+#enum state_before_value
+
+// オブジェクトの値 (: の後ろ) の後
+#enum state_after_value
+
+#define char_lf 0x0a
+
+#define ctype char_is_control(%1) \
+	((0 <= (%1) && (%1) <= 0x1f) || (%1) == 0x7f)
+
+#define ctype char_is_space(%1 = char) \
+	((%1) == ' ' || (%1) == '\t' || (%1) == '\r' || (%1) == char_lf || (%1) == 0)
+
+#define ctype char_is_digit(%1 = char) \
+	('0' <= (%1) && (%1) <= '9')
+
+#define ctype char_is_hex(%1 = char) \
+	(char_is_digit(%1) \
+	|| ('a' <= (%1) && (%1) <= 'f') \
+	|| ('A' <= (%1) && (%1) <= 'F'))
+
+// 数値の最初の文字か？
+#define ctype char_is_number_first(%1 = char) \
+	(char_is_digit(%1) || (%1) == '-')
+
+// トークンの最初の文字か？
+#define ctype char_is_value_first(%1 = char) \
+	(char_is_space(%1) || (%1) == 'n' || (%1) == 't' || (%1) == 'f' || \
+	(%1) == '"' || char_is_number_first(%1) || (%1) == '[' || (%1) == '{')
+
+// JSON として意味のある文字か？
+#define ctype char_is_meta(%1 = char) \
+	(char_is_value_first(%1) || (%1) == ',' || (%1) == ':' || (%1) == ']' || (%1) == '}')
+
+// 次に値を読むべき状態か？
+#define ctype state_is_value_first(%1 = state) \
+	((%1) == state_before_root || (%1) == state_after_root \
+	|| (%1) == state_array_start || (%1) == state_before_item \
+	|| (%1) == state_object_start || (%1) == state_before_pair \
+	|| (%1) == state_before_value)
+
+// JSON 文字列をパースする。
+//
+// %prm
+// text, text_len, event_kinds, event_lens, event_count, error_kinds, error_indexes, error_count
+//
+// var text: パースする JSON 文字列が入った変数
+// int text_len: text の長さ (strlen(text) より小さい値を指定すると一部だけパースされる。)
+//
+// array event_kinds: パース結果として各イベントの種類を受け取る配列変数
+// array event_lens: パース結果として各イベントの長さを受け取る配列変数
+// var event_count: パース結果としてイベントの個数を受け取る変数
+//
+// array error_kinds: パース結果として各エラーの種類を受け取る配列変数 (注意: 未実装なためすべて0になります)
+// array error_indexes: パース結果として各エラーの位置を受け取る配列変数
+// var error_count: パース結果としてエラーの個数を受け取る変数
+//
+// %inst
+// 文字列を JSON としてパース (構文解析) して、イベントやエラーを報告します。
+//
+// イベントの発生位置は event_lens を足していくと分かります。
+// (最初のイベントは位置 0 で起こり、次は位置 event_lens(0)、
+//  その次は位置 (event_lens(0) + event_lens(1)), ... で起こります。)
+// event_lens の長さの総和は、text_len に一致します。
+#deffunc json_parser_parse \
+	var text, int text_len, \
+	array event_kinds, array event_lens, var event_count, \
+	array error_kinds, array error_indexes, var error_count, \
+	local c
+
+	event_count = 0
+	error_count = 0
+
+	// イベントを発行し終えた位置。次のイベントまたはエラーの基準となる。
+	s_index = 0
+
+	// 次に出力するイベントの種類。
+	s_event_kind = -1
+
+	// 次に出力するイベントの長さ。
+	// s_index から始まるこの長さの文字列がイベントに含まれる。
+	s_event_len = -1
+
+	// 次に報告するエラーの種類。
+	s_error_kind = -1
+
+	// 次に報告するエラーの位置。
+	// s_index + s_error_offset の位置にエラーが報告される。
+	s_error_offset = 0
+
+	// エラーを報告したかどうか。true なら、次のイベントまでエラーを報告しない。
+	s_error_found = false
+
+	// 再帰的に積んでいる状態の数。
+	s_prev_state_count = 0
+
+	// パーサーの状態。いま JSON のどのあたりをパースしているかを表す。
+	s_state = state_before_root
+
+	repeat
+		if s_index >= text_len {
+			break
+		}
+
+		c = peek(text, s_index)
+		if c == 0 {
+			gosub *l_error_eof
+			continue
+		}
+
+		// 空白や不正な文字をスキップする。
+		if char_is_space(c) || char_is_meta(c) == false {
+			s_space_offset = 0
+
+			repeat
+				if s_index + s_space_offset >= text_len {
+					break
+				}
+
+				c = peek(text, s_index + s_space_offset)
+				if char_is_space(c) == false && char_is_meta(c) {
+					break
+				}
+
+				if char_is_meta(c) == false {
+					s_error_kind = json_parser_error_unexpected_char
+					s_error_offset = s_space_offset
+					gosub *l_error
+				}
+				s_space_offset++
+			loop
+
+			s_event_kind = json_parser_event_skip
+			s_event_len = s_space_offset
+			gosub *l_emit
+			continue
+		}
+
+		// 空の配列を見たとき
+		if s_state == state_array_start && c == ']' {
+			s_event_kind == json_parser_event_array_end
+			s_event_len = 1
+			gosub *l_emit
+
+			gosub *l_pop_state
+			gosub *l_next_state
+			continue
+		}
+
+		if s_state == state_after_item {
+			if c == ',' {
+				s_event_kind = json_parser_event_comma
+				s_event_len = 1
+				gosub *l_emit
+
+				s_state = state_before_item
+				continue
+			}
+
+			if c == ']' {
+				s_event_kind = json_parser_event_array_end
+				s_event_len = 1
+				gosub *l_emit
+
+				gosub *l_pop_state
+				gosub *l_next_state
+				continue
+			}
+
+			s_error_kind = json_parser_error_expected_comma_or_bracket_r
+			gosub *l_error
+			gosub *l_recovery
+			continue
+		}
+
+		// 空のオブジェクトを見たとき
+		if s_state == state_object_start && c == '}' {
+			s_event_kind = json_parser_event_object_end
+			s_event_len = 1
+			gosub *l_emit
+
+			gosub *l_pop_state
+			gosub *l_next_state
+			continue
+		}
+
+		if s_state == state_after_key {
+			if c == ':' {
+				s_event_kind = json_parser_event_colon
+				s_event_len = 1
+				gosub *l_emit
+
+				s_state = state_before_value
+				continue
+			}
+
+			s_error_kind = json_parser_error_expected_colon
+			gosub *l_error
+			gosub *l_recovery
+			continue
+		}
+
+		if s_state == state_after_value {
+			if c == ',' {
+				s_event_kind = json_parser_event_comma
+				s_event_len = 1
+				gosub *l_emit
+
+				s_state = state_before_pair
+				continue
+			}
+
+			if c == '}' {
+				s_event_kind == json_parser_event_object_end
+				s_event_len = 1
+				gosub *l_emit
+
+				gosub *l_pop_state
+				gosub *l_next_state
+				continue
+			}
+
+			s_error_kind = json_parser_error_expected_comma_or_brace_r
+			gosub *l_error
+			gosub *l_recovery
+			continue
+		}
+
+		// ここから先は1個の JSON 値をパースする。
+		assert state_is_value_first(s_state)
+
+		if s_state == state_after_root {
+			s_error_kind = json_parser_error_expected_eof
+			gosub *l_error
+		}
+
+		if c == 'n' {
+			if strmid(text, s_index, 4) != "null" {
+				s_error_kind = json_parser_error_expected_null
+				gosub *l_error
+
+				s_event_kind = json_parser_event_null
+				s_event_len = 1
+				gosub *l_emit
+
+				gosub *l_next_state
+				continue
+			}
+
+			s_event_kind = json_parser_event_null
+			s_event_len = 4
+			gosub *l_emit
+
+			gosub *l_next_state
+			continue
+		}
+
+		if c == 't' {
+			if strmid(text, s_index, 4) != "true" {
+				s_error_kind = json_parser_error_expected_true
+				gosub *l_error
+
+				s_event_kind = json_parser_event_true
+				s_event_len = 1
+				gosub *l_emit
+
+				gosub *l_next_state
+				continue
+			}
+
+			s_event_kind = json_parser_event_true
+			s_event_len = 4
+			gosub *l_emit
+
+			gosub *l_next_state
+			continue
+		}
+
+		if c == 'f' {
+			if strmid(text, s_index, 5) != "false" {
+				s_error_kind = json_parser_error_expected_false
+				gosub *l_error
+
+				s_event_kind = json_parser_event_false
+				s_event_len = 1
+				gosub *l_emit
+
+				gosub *l_next_state
+				continue
+			}
+
+			s_event_kind = json_parser_event_false
+			s_event_len = 5
+			gosub *l_emit
+
+			gosub *l_next_state
+			continue
+		}
+
+		if c == '"' {
+			s_event_kind = json_parser_event_string_start
+			s_event_len = 1
+			gosub *l_emit
+
+			s_str_offset = 0
+			repeat
+				if s_index + s_str_offset >= text_len {
+					break
+				}
+
+				c = peek(text, s_index + s_str_offset)
+				if c == 0 {
+					s_error_offset = s_str_offset
+					gosub *l_error_eof
+					break
+				}
+
+				if char_is_control(c) {
+					s_error_kind = json_parser_error_unexpected_char
+					s_error_offset = s_str_offset
+					gosub *l_error
+					break
+				}
+
+				if c == '\\' {
+					if s_str_offset > 0 {
+						s_event_kind = json_parser_event_string_verbatim
+						s_event_len = s_str_offset
+						gosub *l_emit
+
+						s_str_offset = 0
+					}
+
+					c = peek(text, s_index + 1)
+					if c == '0' || c == 't' || c == 'r' || c == 'n' || c == 'b' || c == 'f' || c == '\\' || c == '\"' || c == '\'' || c == '/' {
+						if s_index + 2 > text_len {
+							s_error_kind = json_parser_error_unexpected_eof
+							gosub *l_error
+							break
+						}
+
+						s_event_kind = json_parser_event_string_esape
+						s_event_len = 2
+						gosub *l_emit
+
+						assert s_str_offset == 0
+						continue
+					}
+
+					// \uHHHH
+					if c == 'u' {
+						if s_index + 6 > text_len {
+							s_error_kind = json_parser_error_unexpected_eof
+							gosub *l_error
+							break
+						}
+
+						s_event_len = 2
+
+						repeat 4, 2
+							c = peek(text, s_index + cnt)
+							if char_is_hex(c) == false {
+								s_error_kind = json_parser_error_bad_unicode_escape
+								s_error_offset = cnt
+								gosub *l_error
+								break
+							}
+
+							s_event_len++
+						loop
+
+						s_event_kind = json_parser_event_string_esape
+						assert s_event_len >= 1
+						gosub *l_emit
+
+						assert s_str_offset == 0
+						continue
+					}
+
+					s_error_kind = json_parser_error_unknown_escape
+					gosub *l_error
+
+					s_event_kind = json_parser_event_skip
+					s_event_len = 1
+					gosub *l_emit
+
+					assert s_str_offset == 0
+					continue
+				}
+
+				if c == '"' {
+					break
+				}
+
+				s_str_offset++
+			loop
+
+			if s_str_offset > 0 {
+				s_event_kind = json_parser_event_string_verbatim
+				s_event_len = s_str_offset
+				gosub *l_emit
+			}
+
+			s_event_len = 0
+			if s_index < text_len {
+				c = peek(text, s_index)
+				if c == '"' {
+					s_event_len = 1
+				}
+			}
+			s_event_kind = json_parser_event_string_end
+			gosub *l_emit
+
+			gosub *l_next_state
+			continue
+		}
+
+		if char_is_number_first(c) {
+			s_number_offset = 0
+
+			if c == '-' {
+				s_number_offset++
+			}
+
+			// '0' | [1-9] [0-9]*
+			if s_index + s_number_offset >= text_len {
+				s_error_offset = s_number_offset
+				gosub *l_error_eof
+				break
+			}
+			c = peek(text, s_index + s_number_offset)
+			if char_is_digit(c) == false {
+				s_error_kind = json_parser_error_unexpected_char
+				s_error_offset = s_number_offset
+				gosub *l_error
+				gosub *l_recovery
+				continue
+			}
+			if c == '0' {
+				s_number_offset++
+			} else {
+				repeat
+					if s_index + s_number_offset >= text_len {
+						break
+					}
+
+					c = peek(text, s_index + s_number_offset)
+					if char_is_digit(c) == false {
+						break
+					}
+
+					s_number_offset++
+				loop
+			}
+
+			// ('.' digit+)?
+			if s_index + s_number_offset >= text_len {
+				s_error_offset = s_number_offset
+				gosub *l_error_eof
+				break
+			}
+			c = peek(text, s_index + s_number_offset)
+			if c == '.' {
+				s_number_offset++
+
+				if s_index + s_number_offset >= text_len {
+					s_error_offset = s_number_offset
+					gosub *l_error_eof
+					break
+				}
+				c = peek(text, s_index + s_number_offset)
+				if char_is_digit(c) == false {
+					s_error_kind = json_parser_error_unexpected_char
+					s_error_offset = s_number_offset
+					gosub *l_error
+					gosub *l_recovery
+					continue
+				}
+
+				repeat
+					if s_index + s_number_offset >= text_len {
+						break
+					}
+
+					c = peek(text, s_index + s_number_offset)
+					if char_is_digit(c) == false {
+						break
+					}
+
+					s_number_offset++
+				loop
+			}
+
+			// ([eE] [+-]? digit+)?
+			if s_index + s_number_offset >= text_len {
+				s_error_offset = s_number_offset
+				gosub *l_error_eof
+				break
+			}
+			c = peek(text, s_index + s_number_offset)
+			if c == 'e' || c = 'E' {
+				s_number_offset++
+
+				// [+-]?
+				if s_index + s_number_offset >= text_len {
+					s_error_offset = s_number_offset
+					gosub *l_error_eof
+					break
+				}
+				c = peek(text, s_index + s_number_offset)
+				if c == '+' || c == '-' {
+					s_number_offset++
+				}
+
+				if s_index + s_number_offset >= text_len {
+					s_error_offset = s_number_offset
+					gosub *l_error_eof
+					break
+				}
+
+				// digits+
+				c = peek(text, s_index + s_number_offset)
+				if char_is_digit(c) == false {
+					s_error_kind = json_parser_error_unexpected_char
+					s_error_offset = s_number_offset
+					gosub *l_error
+					gosub *l_recovery
+					continue
+				}
+
+				repeat
+					if s_index + s_number_offset >= text_len {
+						break
+					}
+
+					c = peek(text, s_index + s_number_offset)
+					if char_is_digit(c) == false {
+						break
+					}
+
+					s_number_offset++
+				loop
+			}
+
+			s_event_kind = json_parser_event_number
+			s_event_len = s_number_offset
+			gosub *l_emit
+
+			gosub *l_next_state
+			continue
+		}
+
+		if c == '[' {
+			s_event_kind = json_parser_event_array_start
+			s_event_len = 1
+			gosub *l_emit
+
+			gosub *l_push_state
+			s_state = state_array_start
+			continue
+		}
+
+		if c == '{' {
+			s_event_kind = json_parser_event_object_start
+			s_event_len = 1
+			gosub *l_emit
+
+			gosub *l_push_state
+			s_state = state_object_start
+			continue
+		}
+
+		if c == ',' || c == ':' || c == ']' || c == '}' {
+			s_error_kind = json_parser_error_unexpected_char
+			gosub *l_error
+
+			s_event_kind = json_parser_event_skip
+			s_event_len = 1
+			gosub *l_emit
+			continue
+		}
+
+		// すべてのケースを網羅したのでここには来ないはず。
+		gosub *l_error_internal
+		assert false
+		break
+	loop
+
+	if s_state != state_after_root || s_prev_state_count > 0 {
+		s_error_kind = json_parser_error_unexpected_eof
+		gosub *l_error
+		gosub *l_skip_all
+	}
+
+	// EOF
+	s_event_kind = json_parser_event_eof
+	s_event_len = 0
+	gosub *l_emit
+
+	assert s_index == text_len
+	return
+
+// イベントを報告する。s_index が進む。
+// s_event_kind, s_event_len を設定しておくこと。
+*l_emit
+
+	assert s_event_kind >= 1
+	assert s_event_len >= 0
+	assert s_index + s_event_len <= text_len
+
+	event_kinds(event_count) = s_event_kind
+	event_lens(event_count) = s_event_len
+	event_count++
+	s_index += s_event_len
+
+	s_event_kind = -1
+	s_event_len = -1
+	s_error_found = false
+	return
+
+// エラーを報告する。s_error_kind を設定しておくこと。
+*l_error
+
+	assert s_error_kind >= 1
+	assert s_error_offset >= 0
+	assert s_index + s_error_offset <= text_len
+
+	// 大量のエラーを発生させるのを防ぐため、次のイベントまでエラーを報告しない。
+	if s_error_found {
+		s_error_kind = -1
+		s_error_offset = 0
+		return
+	}
+	s_error_found = true
+
+	error_kinds(error_count) = s_error_kind
+	error_indexes(error_count) = s_index + s_error_offset
+	error_count++
+
+	s_error_kind = -1
+	s_error_offset = 0
+	return
+
+// 予期しない EOF によるエラー
+*l_error_eof
+
+	s_error_kind = json_parser_error_unexpected_eof
+	gosub *l_error
+	gosub *l_skip_all
+	return
+
+// パーサー自体のバグによるエラー。
+*l_error_internal
+
+	logmes strf("WARN: json_parser internal error (c=%d, s_state=%d)", c, s_state)
+
+	s_error_kind = json_parser_error_bug
+	gosub *l_error
+	gosub *l_skip_all
+	return
+
+// エラー回復を試みる。
+// とりあえず改行までスキップする。
+*l_recovery
+
+	s_str_lf = ""
+	poke s_str_lf, 0, char_lf
+
+	s_recovery_offset = instr(text, s_index, s_str_lf)
+	if s_recovery_offset > 0 {
+		assert s_event_len < 0
+		s_event_kind = json_parser_event_skip
+		s_event_len = s_recovery_offset + 1
+		gosub *l_emit
+	}
+	return
+
+// 残りの部分のパースを完全に放棄する。
+*l_skip_all
+
+	if s_index >= text_len {
+		return
+	}
+
+	s_event_kind = json_parser_event_skip
+	s_event_len = text_len - s_index
+	gosub *l_emit
+	return
+
+// いまの状態をスタックに積む。
+*l_push_state
+
+	s_prev_states(s_prev_state_count) = s_state
+	s_prev_state_count++
+	return
+
+// 以前の状態をスタックから取る。
+*l_pop_state
+
+	if s_prev_state_count == 0 {
+		gosub *l_error_internal
+		assert false
+		return
+	}
+
+	s_prev_state_count--
+	s_state = s_prev_states(s_prev_state_count)
+	return
+
+// 値を1つ読んだとみなして、状態を1つ進める。
+*l_next_state
+
+	if s_state == state_before_root || s_state == state_after_root {
+		s_state = state_after_root
+		return
+	}
+
+	if s_state == state_array_start || s_state = state_before_item {
+		s_state = state_after_item
+		return
+	}
+
+	if s_state == state_object_start || s_state == state_before_pair {
+		s_state = state_after_key
+		return
+	}
+
+	if s_state == state_before_value {
+		s_state = state_after_value
+		return
+	}
+
+	// 状態を進められない。
+	gosub *l_error_internal
+	assert state_is_value_first(s_state) == false
+	assert false
+	return
+
+#global
+
+#endif

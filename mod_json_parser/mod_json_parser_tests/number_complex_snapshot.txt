@@ -1,0 +1,84 @@
+[TEST]
+number_complex
+
+[EVENTS]
+ARRAY_START(1) `[`
+  SKIP(6) `
+    `
+  NUMBER(1) `0`
+  COMMA(1) `,`
+  SKIP(6) `
+    `
+  NUMBER(1) `1`
+  COMMA(1) `,`
+  SKIP(6) `
+    `
+  NUMBER(2) `42`
+  COMMA(1) `,`
+  SKIP(6) `
+    `
+  NUMBER(4) `3.14`
+  COMMA(1) `,`
+  SKIP(6) `
+    `
+  NUMBER(6) `42.195`
+  COMMA(1) `,`
+  SKIP(6) `
+    `
+  NUMBER(10) `0.00000001`
+  COMMA(1) `,`
+  SKIP(6) `
+    `
+  NUMBER(3) `1e9`
+  COMMA(1) `,`
+  SKIP(6) `
+    `
+  NUMBER(4) `1e+9`
+  COMMA(1) `,`
+  SKIP(6) `
+    `
+  NUMBER(4) `1e-9`
+  COMMA(1) `,`
+  SKIP(6) `
+    `
+  NUMBER(3) `1E9`
+  COMMA(1) `,`
+  SKIP(6) `
+    `
+  NUMBER(4) `1E+9`
+  COMMA(1) `,`
+  SKIP(6) `
+    `
+  NUMBER(4) `1E-9`
+  COMMA(1) `,`
+  SKIP(6) `
+    `
+  NUMBER(7) `6.02e23`
+  COMMA(1) `,`
+  SKIP(6) `
+    `
+  NUMBER(8) `6.02e+23`
+  COMMA(1) `,`
+  SKIP(6) `
+    `
+  NUMBER(8) `6.02e-23`
+  COMMA(1) `,`
+  SKIP(6) `
+    `
+  NUMBER(7) `6.02E23`
+  COMMA(1) `,`
+  SKIP(6) `
+    `
+  NUMBER(8) `6.02E+23`
+  COMMA(1) `,`
+  SKIP(6) `
+    `
+  NUMBER(8) `6.02E-23`
+  SKIP(2) `
+`
+ARRAY_END(1) `]`
+SKIP(2) `
+`
+EOF(0) ``
+
+[EOF]

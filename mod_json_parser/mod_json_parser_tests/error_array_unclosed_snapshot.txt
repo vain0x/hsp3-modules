@@ -1,0 +1,13 @@
+[TEST]
+error_array_unclosed
+
+[EVENTS]
+ARRAY_START(1) `[`
+  SKIP(2) `
+`
+  EOF(0) ``
+
+[JSON]
+[
+<!UNEXPECTED_EOF!>
+[EOF]

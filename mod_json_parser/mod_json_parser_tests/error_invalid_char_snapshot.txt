@@ -1,0 +1,19 @@
+[TEST]
+error_invalid_char
+
+[EVENTS]
+OBJECT_START(1) `{`
+  SKIP(20) `
+    你好 hello
+`
+OBJECT_END(1) `}`
+SKIP(2) `
+`
+EOF(0) ``
+
+[JSON]
+{
+    <!UNEXPECTED_CHAR!>你好 hello
+}
+
+[EOF]

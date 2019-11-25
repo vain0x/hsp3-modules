@@ -1,0 +1,23 @@
+[TEST]
+object_singleton
+
+[EVENTS]
+OBJECT_START(1) `{`
+  SKIP(6) `
+    `
+  STRING_START(1) `"`
+    STRING_VERBATIM(5) `hello`
+  STRING_END(1) `"`
+  COLON(1) `:`
+  SKIP(1) ` `
+  STRING_START(1) `"`
+    STRING_VERBATIM(5) `world`
+  STRING_END(1) `"`
+  SKIP(2) `
+`
+OBJECT_END(1) `}`
+SKIP(2) `
+`
+EOF(0) ``
+
+[EOF]

@@ -1,0 +1,22 @@
+[TEST]
+string_escape
+
+[EVENTS]
+STRING_START(1) `"`
+  STRING_ESAPE(6) `\u0009`
+  STRING_ESAPE(2) `\"`
+  STRING_VERBATIM(5) `Hello`
+  STRING_ESAPE(2) `\"`
+  STRING_ESAPE(6) `\u000d`
+  STRING_ESAPE(6) `\u000a`
+  STRING_ESAPE(2) `\t`
+  STRING_ESAPE(2) `\\`
+  STRING_ESAPE(2) `\\`
+  STRING_VERBATIM(5) `world`
+  STRING_ESAPE(2) `\n`
+STRING_END(1) `"`
+SKIP(2) `
+`
+EOF(0) ``
+
+[EOF]

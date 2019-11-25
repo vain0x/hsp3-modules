@@ -1,0 +1,35 @@
+[TEST]
+literals
+
+[EVENTS]
+OBJECT_START(1) `{`
+  SKIP(6) `
+    `
+  STRING_START(1) `"`
+    STRING_VERBATIM(4) `null`
+  STRING_END(1) `"`
+  COLON(1) `:`
+  SKIP(1) ` `
+  NULL(4) `null`
+  COMMA(1) `,`
+  SKIP(6) `
+    `
+  STRING_START(1) `"`
+    STRING_VERBATIM(7) `boolean`
+  STRING_END(1) `"`
+  COLON(1) `:`
+  SKIP(1) ` `
+  ARRAY_START(1) `[`
+    TRUE(4) `true`
+    COMMA(1) `,`
+    SKIP(1) ` `
+    FALSE(5) `false`
+  ARRAY_END(1) `]`
+  SKIP(2) `
+`
+OBJECT_END(1) `}`
+SKIP(2) `
+`
+EOF(0) ``
+
+[EOF]

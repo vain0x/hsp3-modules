@@ -1,0 +1,15 @@
+[TEST]
+error_array_missing_comma
+
+[EVENTS]
+ARRAY_START(1) `[`
+  NUMBER(1) `1`
+  SKIP(1) ` `
+  SKIP(4) `2]
+`
+  EOF(0) ``
+
+[JSON]
+[1 <!EXPECTED_COMMA_OR_BRACKET_R!>2]
+<!UNEXPECTED_EOF!>
+[EOF]

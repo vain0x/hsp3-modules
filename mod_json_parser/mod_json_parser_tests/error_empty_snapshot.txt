@@ -1,0 +1,9 @@
+[TEST]
+error_empty
+
+[EVENTS]
+EOF(0) ``
+
+[JSON]
+<!UNEXPECTED_EOF!>
+[EOF]

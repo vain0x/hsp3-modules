@@ -1,0 +1,60 @@
+[TEST]
+error_multiple_values
+
+[EVENTS]
+STRING_START(1) `"`
+  STRING_VERBATIM(5) `first`
+STRING_END(1) `"`
+SKIP(2) `
+`
+STRING_START(1) `"`
+  STRING_VERBATIM(6) `second`
+STRING_END(1) `"`
+SKIP(2) `
+`
+ARRAY_START(1) `[`
+  SKIP(6) `
+    `
+  NUMBER(1) `3`
+  COMMA(1) `,`
+  SKIP(1) ` `
+  STRING_START(1) `"`
+    STRING_VERBATIM(1) `r`
+  STRING_END(1) `"`
+  COMMA(1) `,`
+  SKIP(1) ` `
+  STRING_START(1) `"`
+    STRING_VERBATIM(1) `d`
+  STRING_END(1) `"`
+  SKIP(2) `
+`
+ARRAY_END(1) `]`
+SKIP(2) `
+`
+OBJECT_START(1) `{`
+  SKIP(6) `
+    `
+  STRING_START(1) `"`
+    STRING_VERBATIM(4) `last`
+  STRING_END(1) `"`
+  COLON(1) `:`
+  SKIP(1) ` `
+  NULL(4) `null`
+  SKIP(2) `
+`
+OBJECT_END(1) `}`
+SKIP(2) `
+`
+EOF(0) ``
+
+[JSON]
+"first"
+<!EXPECTED_EOF!>"second"
+<!EXPECTED_EOF!>[
+    3, "r", "d"
+]
+<!EXPECTED_EOF!>{
+    "last": null
+}
+
+[EOF]

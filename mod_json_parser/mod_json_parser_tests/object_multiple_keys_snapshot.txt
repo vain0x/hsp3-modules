@@ -1,0 +1,28 @@
+[TEST]
+object_multiple_keys
+
+[EVENTS]
+OBJECT_START(1) `{`
+  STRING_START(1) `"`
+    STRING_VERBATIM(1) `1`
+  STRING_END(1) `"`
+  COLON(1) `:`
+  SKIP(1) ` `
+  STRING_START(1) `"`
+    STRING_VERBATIM(3) `one`
+  STRING_END(1) `"`
+  COMMA(1) `,`
+  STRING_START(1) `"`
+    STRING_VERBATIM(1) `2`
+  STRING_END(1) `"`
+  COLON(1) `:`
+  SKIP(1) ` `
+  STRING_START(1) `"`
+    STRING_VERBATIM(3) `two`
+  STRING_END(1) `"`
+OBJECT_END(1) `}`
+SKIP(2) `
+`
+EOF(0) ``
+
+[EOF]

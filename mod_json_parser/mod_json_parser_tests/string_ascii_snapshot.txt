@@ -1,0 +1,12 @@
+[TEST]
+string_ascii
+
+[EVENTS]
+STRING_START(1) `"`
+  STRING_VERBATIM(13) `Hello, world!`
+STRING_END(1) `"`
+SKIP(2) `
+`
+EOF(0) ``
+
+[EOF]

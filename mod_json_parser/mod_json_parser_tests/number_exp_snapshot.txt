@@ -1,0 +1,24 @@
+[TEST]
+number_exp
+
+[EVENTS]
+ARRAY_START(1) `[`
+  SKIP(6) `
+    `
+  NUMBER(8) `6.02e-23`
+  COMMA(1) `,`
+  SKIP(6) `
+    `
+  NUMBER(14) `1.000000007e+9`
+  COMMA(1) `,`
+  SKIP(6) `
+    `
+  NUMBER(5) `0E000`
+  SKIP(2) `
+`
+ARRAY_END(1) `]`
+SKIP(2) `
+`
+EOF(0) ``
+
+[EOF]

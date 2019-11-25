@@ -1,0 +1,23 @@
+# https://github.com/vain0x/server/blob/4b0b635218/docker-compose.yml
+
+version: "3"
+
+services:
+  # <https://github.com/vain0x/share>
+  share:
+    build: lib/share
+
+  # <https://github.com/vain0x/https-portal>
+  https-portal:
+    build: lib/https-portal
+    ports:
+      - "80:80"
+      - "443:443"
+    links:
+      - "share"
+    restart: "always"
+    environment:
+      DOMAINS: "share.vain0x.tk -> http://share:80"
+      STAGE: "local"
+    # STAGE: "production"
+    # FORCE_RENEW: "true"

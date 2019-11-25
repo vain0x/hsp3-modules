@@ -1,0 +1,10 @@
+[TEST]
+number_float
+
+[EVENTS]
+NUMBER(7) `3.14159`
+SKIP(2) `
+`
+EOF(0) ``
+
+[EOF]

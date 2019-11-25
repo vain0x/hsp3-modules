@@ -1,0 +1,49 @@
+[TEST]
+array_nested
+
+[EVENTS]
+ARRAY_START(1) `[`
+  SKIP(6) `
+    `
+  ARRAY_START(1) `[`
+  ARRAY_END(1) `]`
+  COMMA(1) `,`
+  SKIP(6) `
+    `
+  ARRAY_START(1) `[`
+    SKIP(10) `
+        `
+    ARRAY_START(1) `[`
+    ARRAY_END(1) `]`
+    COMMA(1) `,`
+    SKIP(10) `
+        `
+    ARRAY_START(1) `[`
+      SKIP(14) `
+            `
+      ARRAY_START(1) `[`
+      ARRAY_END(1) `]`
+      SKIP(10) `
+        `
+    ARRAY_END(1) `]`
+    COMMA(1) `,`
+    SKIP(10) `
+        `
+    ARRAY_START(1) `[`
+    ARRAY_END(1) `]`
+    SKIP(6) `
+    `
+  ARRAY_END(1) `]`
+  COMMA(1) `,`
+  SKIP(6) `
+    `
+  ARRAY_START(1) `[`
+  ARRAY_END(1) `]`
+  SKIP(2) `
+`
+ARRAY_END(1) `]`
+SKIP(2) `
+`
+EOF(0) ``
+
+[EOF]
