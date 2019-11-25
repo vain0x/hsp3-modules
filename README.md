@@ -2,6 +2,12 @@
 
 HSP3 のモジュール集です。
 
+## mod_json_parser
+
+[mod_json_parser](./mod_json_parser)
+
+- イベント出力型の JSON パーサー
+
 ## mod_mapss
 
 [mod_mapss](./mod_mapss)
