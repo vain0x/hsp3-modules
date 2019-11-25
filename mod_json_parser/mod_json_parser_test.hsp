@@ -38,7 +38,7 @@
 	s_event_names(json_parser_event_number) = "NUMBER"
 	s_event_names(json_parser_event_string_start) = "STRING_START"
 	s_event_names(json_parser_event_string_verbatim) = "STRING_VERBATIM"
-	s_event_names(json_parser_event_string_esape) = "STRING_ESAPE"
+	s_event_names(json_parser_event_string_escape) = "STRING_ESCAPE"
 	s_event_names(json_parser_event_string_end) = "STRING_END"
 	s_event_names(json_parser_event_item_start) = "ITEM_START"
 	s_event_names(json_parser_event_item_end) = "ITEM_END"

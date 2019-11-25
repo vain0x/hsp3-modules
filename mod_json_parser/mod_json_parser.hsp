@@ -50,7 +50,7 @@
 #enum global json_parser_event_string_verbatim
 
 // 文字列リテラルの内部で、1個のエスケープシーケンス
-#enum global json_parser_event_string_esape
+#enum global json_parser_event_string_escape
 
 // 文字列リテラルの終了 ('"')
 #enum global json_parser_event_string_end
@@ -472,7 +472,7 @@
 							break
 						}
 
-						s_event_kind = json_parser_event_string_esape
+						s_event_kind = json_parser_event_string_escape
 						s_event_len = 2
 						gosub *l_emit
 
@@ -502,7 +502,7 @@
 							s_event_len++
 						loop
 
-						s_event_kind = json_parser_event_string_esape
+						s_event_kind = json_parser_event_string_escape
 						assert s_event_len >= 1
 						gosub *l_emit
 
