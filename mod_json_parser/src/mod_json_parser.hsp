@@ -1,11 +1,12 @@
-// JSON パーサー
-// 参考: [JSON](https://www.json.org/)
-// LICENSE: PUBLIC DOMAIN
+// LICENSE: Unlicensed (PUBLIC DOMAIN)
 // v0.1.0
+
+// 参考: [JSON](https://www.json.org/)
 
 #ifndef included_mod_json_parser_hsp
 #define included_mod_json_parser_hsp
 
+// JSON パーサー
 #module m_json_parser
 
 // EOF (文字列の末尾) に到達したとき
