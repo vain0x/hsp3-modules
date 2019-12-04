@@ -1,5 +1,6 @@
 // 文字列から文字列への連想配列
 // LICENSE: PUBLIC DOMAIN
+// v0.1.0
 
 #ifndef included_mod_mapss_hsp
 #define included_mod_mapss_hsp
