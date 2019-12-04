@@ -20,7 +20,7 @@
 ## 使い方
 
 ```hsp
-#include "mod_mapss.hsp
+#include "mod_mapss.hsp"
 
     // 変数を連想配列にします。m は str 型になります。
     mapss_make m
