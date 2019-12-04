@@ -8,6 +8,12 @@ HSP3 のモジュール集です。
 
 - コマンドライン引数の解析
 
+## mod_hspish_font
+
+[mod_hspish_font](./mod_hspish_font)
+
+- font 命令と同様の方法でフォントオブジェクトを作成
+
 ## mod_json_parser
 
 [mod_json_parser](./mod_json_parser)
