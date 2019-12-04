@@ -2,6 +2,12 @@
 
 HSP3 のモジュール集です。
 
+## mod_cmdline_parser
+
+[mod_cmdline_parser](./mod_cmdline_parser)
+
+- コマンドライン引数の解析
+
 ## mod_json_parser
 
 [mod_json_parser](./mod_json_parser)
