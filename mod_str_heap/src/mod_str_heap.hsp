@@ -1,0 +1,172 @@
+// LICENSE: Unlicensed (PUBLIC_DOMAIN)
+
+#ifndef included_mod_str_heap_hsp
+#define included_mod_str_heap_hsp
+
+// str 型の変数をヒープメモリとして管理するモジュール
+#module m_str_heap
+
+// メモリ構造:
+// 	meta:
+//      zero
+//      mem_len
+//      mem_cap
+//      free_list[30]
+//  byte[]
+
+#define s_max_rank 30
+
+#define s_mem_len_offset 4
+#define s_mem_cap_offset 8
+
+#define ctype s_free_list_offset(%1 = rank) \
+	(12 + (%1) * 4)
+
+#define s_meta_len \
+	s_free_list_offset(s_max_rank)
+
+#define s_min_mem_cap \
+	1024
+
+#define ctype get_mem_len(%1 = inner) \
+	lpeek((%1), s_mem_len_offset)
+
+#define ctype get_mem_cap(%1 = inner) \
+	lpeek((%1), s_mem_cap_offset)
+
+#define ctype get_free_addr(%1 = inner, %2 = rank) \
+	lpeek((%1), s_free_list_offset(%2))
+
+// 変数をヒープとして初期化する
+#deffunc str_heap_make var inner, int static_len, \
+	local mem_cap
+
+	assert static_len >= 0
+
+	repeat 20, 10
+		if (1 << cnt) >= limit(s_meta_len + static_len, s_min_mem_cap, 0x7fffffff) {
+			mem_cap = 1 << cnt
+			break
+		}
+	loop
+
+	assert mem_cap >= s_meta_len + static_len
+	assert mem_cap >= s_min_mem_cap
+
+	inner = ""
+
+	memexpand inner, mem_cap
+	memset inner, 0, mem_cap
+
+	lpoke inner, s_mem_len_offset, s_meta_len
+	lpoke inner, s_mem_cap_offset, mem_cap
+	return
+
+// 静的領域のベースアドレスを取得する
+#deffunc str_heap_get_base_addr
+
+	return s_meta_len
+
+// ヒープを拡張する
+#deffunc local str_heap_reserve var inner, int min_mem_len, \
+	local rank, local mem_len, local mem_cap
+
+	if min_mem_len < get_mem_cap(inner) {
+		return
+	}
+
+	// メモリサイズのランクを計算する。
+	rank = 2
+	repeat s_max_rank - 2
+		if (1 << rank) >= min_mem_len {
+			break
+		}
+		rank++
+	loop
+
+	mem_cap = 1 << rank
+	assert mem_cap >= min_mem_len
+
+	memexpand inner, mem_cap
+	lpoke inner, s_mem_cap_offset, mem_cap
+	return
+
+// ヒープ上にメモリを確保する
+#deffunc str_heap_alloc var inner, int min_data_len, \
+	local rank, local mem_len, local addr, local next_addr
+
+	// メモリサイズのランクを計算する。
+	rank = 2
+	repeat s_max_rank - 2
+		if (1 << rank) >= min_data_len {
+			break
+		}
+		rank++
+	loop
+
+	// フリーリストから取り出す。
+	addr = get_free_addr(inner, rank)
+	if addr {
+		lpoke inner, s_free_list_offset(rank), lpeek(inner, addr)
+		return addr
+	}
+
+	// メモリブロックを追加する。
+	addr = get_mem_len(inner) + 4
+	mem_len = addr + (1 << rank)
+
+	str_heap_reserve inner, mem_len
+
+	lpoke inner, addr - 4, rank
+	memset inner, 0, 1 << rank, addr
+
+	lpoke inner, s_mem_len_offset, mem_len
+	return addr
+
+// ヒープ上のメモリを解放する
+#deffunc str_heap_free var inner, int addr, \
+	local rank
+
+	assert addr >= s_meta_len + 4
+
+	rank = lpeek(inner, addr - 4)
+
+	// フリーリストに戻す。
+	lpoke inner, addr, get_free_addr(inner, rank)
+	lpoke inner, s_free_list_offset(rank), addr
+	return
+
+// ヒープ上のメモリを拡張する
+#deffunc str_heap_realloc var inner, int old_addr, int new_data_len, int old_data_len, \
+	local old_rank, local new_addr, local copy_len
+
+	assert old_addr >= s_meta_len + 4
+	assert new_data_len >= 0
+	assert old_data_len >= 0
+
+	old_rank = lpeek(inner, old_addr - 4)
+
+	// キャパシティに収まるなら拡張しない。
+	if new_data_len <= (1 << old_rank) {
+		return old_addr
+	}
+
+	// 新しい領域を確保する。
+	str_heap_alloc inner, new_data_len
+	new_addr = stat
+
+	// データを移動する。
+	copy_len = limit(old_data_len, 0, 1 << old_rank)
+	if old_data_len == 0 {
+		copy_len = 1 << old_rank
+	}
+
+	memcpy inner, inner, copy_len, new_addr, old_addr
+
+	// 古い領域を解放する。
+	str_heap_free inner, old_addr
+	return new_addr
+
+#global
+
+#endif

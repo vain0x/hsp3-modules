@@ -1,0 +1,56 @@
+// mod_str_heap.hsp のテスト
+// LICENSE: Unlicensed (PUBLIC DOMAIN)
+
+#include "mod_str_heap.hsp"
+
+	str_heap_get_base_addr
+	s_base_addr = stat
+
+	sdim s_heap
+
+	// 静的領域を確保する。
+	str_heap_make s_heap, 1000
+
+	s_ptr = varptr(s_heap)
+	assert strsize - s_base_addr >= 1000
+
+	// データを確保・解放する。
+	str_heap_alloc s_heap, 500
+	s_addr = stat
+
+	memset s_heap, 0xcd, 500, s_addr
+	str_heap_free s_heap, s_addr
+
+	// フリーリストの挙動をテストする。
+	repeat 10
+		str_heap_alloc s_heap, 4
+		s_addrs(cnt) = stat
+	loop
+
+	assert s_addrs(1) - s_addrs(0) >= 4
+
+	repeat 10
+		str_heap_free s_heap, s_addrs(cnt)
+	loop
+
+	repeat 10
+		str_heap_alloc s_heap, 4
+		assert stat == s_addrs(9 - cnt) // 逆順に再利用される。
+	loop
+
+	// str_heap_realloc をテストする。
+	str_heap_alloc s_heap, 1000
+	s_addr = stat
+
+	poke s_heap, s_addr, "hello"
+
+	str_heap_realloc s_heap, s_addr, 900
+	assert stat == s_addr
+
+	str_heap_realloc s_heap, 2000
+	assert stat != s_addr
+
+	dupptr s_view, varptr(s_heap) + s_addr, 2000, vartype("str")
+	assert s_view == "hello"
+
+	mes "OK"
