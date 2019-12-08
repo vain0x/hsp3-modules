@@ -7,7 +7,7 @@
 // 文字列のエンコーディングを Unicode と相互変換する機能を提供する
 //
 // %note
-// m_unicode_cnv.hsp を #include すること。
+// mod_unicode_cnv.hsp を #include すること。
 // Win32 API を使用するため、Windows 上でのみ動作する。
 #module m_unicode_cnv
 
