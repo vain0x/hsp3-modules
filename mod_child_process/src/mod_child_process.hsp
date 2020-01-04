@@ -1,5 +1,5 @@
 // LICENSE: Unlicensed (PUBLIC DOMAIN)
-// v0.1.0
+// v0.2.0
 
 #ifndef included_mod_child_process_hsp
 #define included_mod_child_process_hsp
@@ -22,6 +22,7 @@
 #define INVALID_HANDLE_VALUE (-1)
 #define HANDLE_FLAG_INHERIT 0x0001
 
+#define STARTF_USESHOWWINDOW 0x00000001
 #define STARTF_USESTDHANDLES 0x00000100
 
 // 配列の要素番号
@@ -219,6 +220,10 @@
 	if inner(s_cp_stdin_read_handle) != 0 || inner(s_cp_stdout_write_handle) != 0 {
 		startup_info(11) |= STARTF_USESTDHANDLES
 	}
+
+	// 非表示で起動する。
+	startup_info(11) |= STARTF_USESHOWWINDOW
+	startup_info(12) = 0 // SW_HIDE
 
 	// PROCESS_INFORMATION
 	dim proc_info, 4 * 4
