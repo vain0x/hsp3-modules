@@ -2,6 +2,12 @@
 
 HSP3 のモジュール集です。
 
+## mod_child_process
+
+[mod_child_process](./mod_child_process)
+
+- サブプロセスの起動および標準入出力による通信
+
 ## mod_cmdline_parser
 
 [mod_cmdline_parser](./mod_cmdline_parser)
