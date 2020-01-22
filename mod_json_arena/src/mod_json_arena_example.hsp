@@ -1,0 +1,24 @@
+
+#include "../../mod_json_parser/src/mod_json_parser.hsp"
+#include "mod_json_arena.hsp"
+
+	text = {"{"version":1}"}
+	text_len = strlen(text)
+
+	dim s_event_kinds
+	dim s_event_lens
+	s_event_count = 0
+
+	dim s_error_kinds
+	dim s_error_indexes
+	s_error_count = 0
+
+	json_parser_parse text, text_len, s_event_kinds, s_event_lens, s_event_count, s_error_kinds, s_error_indexes, s_error_count
+
+	// json_builder_entry jw, jb, "version"
+	// json_builder_get_int jw, jb
+	// json_builder_set_int jw, jb, stat + 1
+	// json_builder_finish jw, jb
+	// json_builder_to_str jw, jb, s
+
+	// assert s == {"{"version":2}"}

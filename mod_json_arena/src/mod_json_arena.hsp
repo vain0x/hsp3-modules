@@ -1,0 +1,133 @@
+// LICENSE: Unlicensed (PUBLIC DOMAIN)
+// v0.1.0
+
+#module m_json_arena
+
+#define true 1
+#define false 0
+
+#define char_lf 10
+
+#enum json_node_null = 1
+#enum json_node_false
+#enum json_node_true
+#enum json_node_number
+#enum json_node_string
+#enum json_node_array
+#enum json_node_object
+
+#deffunc json_arena_init array ja
+
+	dim ja, json_node_true + 1
+
+	ja(json_node_null) = json_node_null
+	ja(json_node_false) = json_node_false
+	ja(json_node_true) = json_node_true
+	return
+
+#deffunc json_arena_new_null array ja
+
+	return json_node_null
+
+#deffunc json_arena_new_boolean array ja, int value
+
+	if value {
+		return json_node_true
+	}
+	return json_node_false
+
+// -----------------------------------------------
+// number
+// -----------------------------------------------
+
+#deffunc json_arena_new_number array ja, double value, \
+	local i, local node_id, local data
+
+	data = value
+
+	node_id = length(ja)
+	ja(node_id + 3 - 1) = 0
+
+	ja(node_id) = json_node_number
+	memcpy ja(node_id + 1), data, 8
+
+	return node_id
+
+#deffunc json_arena_get_number array ja, int node_id, var data
+
+	data = 0.0
+
+	if node_id < 0 || node_id + 3 > length(ja) {
+		return false
+	}
+
+	if ja(node_id) != json_node_number {
+		return false
+	}
+
+	memcpy data, ja(node_id, 1), 8
+	return true
+
+// -----------------------------------------------
+// string
+// -----------------------------------------------
+
+#deffunc json_arena_new_string array ja, var data, int data_len, \
+	local node_id, local bytes
+
+	bytes = data_len / 4 + 1
+
+	node_id = ja(0)
+	ja(node_id + 2 + bytes - 1) = 0
+
+	ja(node_id) = json_node_string
+	ja(node_id + 1) = data_len
+
+	memcpy ja(node_id + 2), data, data_len
+	return node_id
+
+#deffunc json_arena_get_string array ja, int node_id, var data, var data_len, \
+	local bytes
+
+	data = ""
+	data_len = 0
+
+	if node_id < 0 || node_id + 2 > length(ja) {
+		return false
+	}
+
+	if ja(node_id) != json_node_string {
+		return false
+	}
+
+	data_len = ja(node_id + 1)
+	bytes = data_len / 4 + 1
+
+	if node_id + 2 + bytes > length(ja) {
+		data_len = 0
+		return false
+	}
+
+	memexpand data,
+
+#deffunc json_arena_new_array array ja, int min_capacity, \
+	local node_id, local capacity
+
+	node_id = ja(0)
+
+
+// #deffunc json_builder_from_str array jw, array jb, str text, \
+// 	local i, local c, local len
+
+// 	len = strlen(text)
+
+// 	return
+
+// #deffunc json_builder_entry array jw, array jb, "version"
+// #deffunc json_builder_get_int array jw, array jb
+// #deffunc json_builder_set_int array jw, array jb, stat + 1
+// #deffunc json_builder_finish
+// #deffunc json_builder_to_str array jw, array jb, s
+
+
+#global
