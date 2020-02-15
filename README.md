@@ -37,7 +37,3 @@ HSP3 のモジュール集です。
 [mod_unicode_cnv](./mod_unicode_cnv)
 
 - 文字列のエンコーディングを Unicode と相互変換
-
-## その他
-
-- ライセンスはすべて [Unlicensed](http://unlicense.org) (パブリックドメイン) です。ご自由にご利用ください。
