@@ -1,0 +1,82 @@
+
+#module m_hhook
+
+#deffunc hhook_run label callback
+
+	s_path = "/"
+	s_path_len = 0
+	dim s_ids, 16
+	s_index = 0
+
+	// dim s_int_values
+	s_int_value_index = 0
+	s_int_value_count = 0
+
+	// sdim s_str_values
+	s_str_value_index = 0
+	s_str_value_count = 0
+	return
+
+#deffunc hhook_call label callback, \
+	local old_depth
+
+	s_path(s_path_len) = str(s_ids(s_path_len))
+	s_ids(s_path_len)++
+	s_path_len++
+	old_depth = s_path_len
+
+	gosub callback
+
+	assert s_path_len == old_depth
+	s_path_len--
+	return
+
+#deffunc hhook_use_int var value
+
+	assert vartype(value) == vartype("int")
+	return 0
+
+#deffunc hhook_set_int int id, int value
+
+	return
+
+#defcfunc hhook_use_effect
+
+	return 1
+
+#global
+
+	hhook_run *l_render
+	stop
+
+*l_render
+
+	hhook_call *l_render_counter
+	return
+
+*l_render_counter
+
+	count = 0
+	hhook_use_int count
+	count_id = stat
+
+	up_button_id = 0
+	hhook_use_int up_button_id
+
+	if hhook_use_effect() {
+		button gosub "+", *l_up
+		hhook_set_int up_button_id, stat
+	}
+
+	stick flags
+	left_click = (flags & 0x100) != 0
+	if left_click {
+		hhook_set_int count_id, count + 1
+	}
+
+	mes count
+	return
+
+*l_up
+
+	return
