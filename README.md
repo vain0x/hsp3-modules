@@ -20,6 +20,12 @@ HSP3 のモジュール集です。
 
 - サブプロセスの起動および標準入出力による通信
 
+## mod_config
+
+[mod_config](./mod_config)
+
+- シンプルな設定ファイル。キーの配列と値のペアだけを扱う。
+
 ## mod_cmdline_parser
 
 [mod_cmdline_parser](./mod_cmdline_parser)
