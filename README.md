@@ -37,3 +37,9 @@ HSP3 のモジュール集です。
 [mod_unicode_cnv](./mod_unicode_cnv)
 
 - 文字列のエンコーディングを Unicode と相互変換
+
+----
+
+## ライセンス
+
+すべて [CC0-1.0 (著作権なし)](https://creativecommons.org/publicdomain/zero/1.0/deed.ja) です。用途の制限や権利表記の義務はないので、自由に使ってください。
