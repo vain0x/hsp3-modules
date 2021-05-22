@@ -1,6 +1,6 @@
 // LICENSE: CC0-1.0 <https://creativecommons.org/publicdomain/zero/1.0/deed.ja>
 // 文字列から文字列への連想配列
-// v0.1.0
+// v0.1.0 <https://github.com/vain0x/hsp3-modules/tree/main/mod_mapss>
 
 #ifndef included_mod_mapss_hsp
 #define included_mod_mapss_hsp
