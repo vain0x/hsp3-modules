@@ -2,6 +2,12 @@
 
 HSP3 のモジュール集です。
 
+## mod_buf
+
+[mod_buf](./mod_buf)
+
+- str型の高速かつバイナリセーフな連結など
+
 ## mod_child_process
 
 [mod_child_process](./mod_child_process)
