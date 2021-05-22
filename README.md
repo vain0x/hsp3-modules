@@ -2,6 +2,12 @@
 
 HSP3 のモジュール集です。
 
+## mod_assoc
+
+[mod_assoc](./mod_assoc)
+
+- シンプルな連想配列。キーの配列と値の配列のペアを使う (ハッシュテーブルやツリーではない)。
+
 ## mod_buf
 
 [mod_buf](./mod_buf)
