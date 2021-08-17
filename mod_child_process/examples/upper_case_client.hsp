@@ -1,5 +1,5 @@
-// LICENSE: CC0-1.0 <https://creativecommons.org/publicdomain/zero/1.0/deed.ja>
-// クライアントサイド
+; LICENSE: CC0-1.0 <https://creativecommons.org/publicdomain/zero/1.0/deed.ja>
+; クライアントサイド
 
 #include "hsp3utf.as"
 #include "../src/mod_child_process.hsp"
@@ -7,13 +7,13 @@
 #define true 1
 #define false 0
 
-	// サーバーの起動コマンド
+	; サーバーの起動コマンド
 	s_server_cmdline = "ruby upper_case_server.rb"
 
-	// サーバーを起動する。
+	; サーバーを起動する。
 	gosub *l_start_server
 
-	// ウィンドウを表示する。
+	; ウィンドウを表示する。
 	gosub *l_open_window
 
 	repeat
@@ -27,28 +27,28 @@
 	dialog s_error, 1
 	end 1
 
-// -----------------------------------------------
-// サーバーの起動・停止・通信
-// -----------------------------------------------
+; ------------------------------------------------
+; サーバーの起動・停止・通信
+; ------------------------------------------------
 
-// サーバーを起動する。
+; サーバーを起動する。
 *l_start_server
 
-	// サブプロセス (サーバー) への標準入力を入れる変数
+	; サブプロセス (サーバー) への標準入力を入れる変数
 	s_server_stdin_data_cap = 0x1000
 	sdim s_server_stdin_data, s_server_stdin_data_cap
 	dim s_server_stdin_data_len
 
-	// サブプロセス (サーバー) からの標準出力を入れる変数
+	; サブプロセス (サーバー) からの標準出力を入れる変数
 	s_server_stdout_data_cap = 0x1000
 	sdim s_server_stdout_data, s_server_stdout_data_cap
 	dim s_server_stdout_data_len
 
-	// サブプロセスに関するデータを入れる変数
+	; サブプロセスに関するデータを入れる変数
 	dim s_server_process
 	child_process_prepare s_server_process
 
-	// 標準入出力のリダイレクトを設定する。
+	; 標準入出力のリダイレクトを設定する。
 	child_process_redirect_stdin s_server_process
 	if stat == 0 {
 		s_error = "ERROR: child_proecss_redirect_stdin"
@@ -61,7 +61,7 @@
 		goto *l_error
 	}
 
-	// サブプロセスを起動する。
+	; サブプロセスを起動する。
 	child_process_spawn s_server_process, s_server_cmdline
 	if stat == 0 {
 		s_error = "エラー: サブプロセスを起動できません。"
@@ -72,17 +72,17 @@
 	logmes "サーバーが起動しました。"
 	return
 
-// サーバーを停止させる。
+; サーバーを停止させる。
 *l_stop_server
 
 	assert s_server_is_running
 
-	// EXIT を送ってサーバーを停止させる。
-	// (サーバーは EXIT を受け取ったら停止するように実装されている。)
+	; EXIT を送ってサーバーを停止させる。
+	; (サーバーは EXIT を受け取ったら停止するように実装されている。)
 	s_server_stdin_data = "EXIT\n"
 	child_process_write_stdin s_server_process, s_server_stdin_data, strlen(s_server_stdin_data)
 
-	// サーバーの停止を3秒だけ待つ。
+	; サーバーの停止を3秒だけ待つ。
 	s_timeout_millis = 3 * 1000
 	child_process_wait s_server_process, s_timeout_millis
 	if stat == 0 {
@@ -92,7 +92,7 @@
 		logmes "サーバーが停止しました。"
 	}
 
-	// サーバーの終了コードを確認する。(省略可)
+	; サーバーの終了コードを確認する。(省略可)
 	dim s_server_exit_code
 
 	child_process_get_exit_code s_server_process, s_server_exit_code
@@ -100,11 +100,11 @@
 		logmes "警告: サーバーの終了コードが 0 ではありません: " + s_server_exit_code
 	}
 
-	// サーバーのために確保したリソースを解放する。
+	; サーバーのために確保したリソースを解放する。
 	child_process_close s_server_process
 	return
 
-// サーバーからデータを受信する。
+; サーバーからデータを受信する。
 *l_poll_server
 
 	if s_server_is_running == false {
@@ -123,12 +123,12 @@
 		return
 	}
 
-	// サーバーから受信したデータを使って何かする。
+	; サーバーから受信したデータを使って何かする。
 	gosub *l_on_response
 	return
 
-// サーバーにデータを送る。
-// あらかじめ s_server_stdin_data に送るデータを入れておくこと。
+; サーバーにデータを送る。
+; あらかじめ s_server_stdin_data に送るデータを入れておくこと。
 *l_send_request_to_server
 
 	child_process_write_stdin s_server_process, s_server_stdin_data, s_server_stdin_data_len
@@ -140,11 +140,11 @@
 	gosub *l_poll_server
 	return
 
-// -----------------------------------------------
-// クライアントの実装
-// -----------------------------------------------
+; ------------------------------------------------
+; クライアントの実装
+; ------------------------------------------------
 
-// ウィンドウを表示する。
+; ウィンドウを表示する。
 *l_open_window
 
 	s_input_text = "hello, world"
@@ -158,19 +158,19 @@
 	onexit gosub *l_on_exit
 	return
 
-// 終了時に呼ばれる。(バツボタンを押したときなど。)
+; 終了時に呼ばれる。(バツボタンを押したときなど。)
 *l_on_exit
 
 	gosub *l_stop_server
 	end
 
-// サーバーからデータを受け取ったときに呼ばれる。
+; サーバーからデータを受け取ったときに呼ばれる。
 *l_on_response
 
 	gosub *l_upper_case_response
 	return
 
-// 「大文字」ボタンを押したときに呼ばれる。
+; 「大文字」ボタンを押したときに呼ばれる。
 *l_upper_case_request
 
 	assert s_server_is_running
@@ -180,14 +180,14 @@
 	gosub *l_send_request_to_server
 	return
 
-// サーバーから、文字列を大文字にした結果が渡されたときに呼ばれる。
+; サーバーから、文字列を大文字にした結果が渡されたときに呼ばれる。
 *l_upper_case_response
 
 	logmes "応答: '" + s_server_stdout_data + "'"
 
-	// 末尾の改行文字を取り除く。
+	; 末尾の改行文字を取り除く。
 	getstr s_server_stdout_data, s_server_stdout_data
 
-	// 入力欄を変更する。
+	; 入力欄を変更する。
 	objprm s_input_object_id, s_server_stdout_data
 	return
