@@ -1,5 +1,5 @@
-// LICENSE: CC0-1.0 <https://creativecommons.org/publicdomain/zero/1.0/deed.ja>
-// テスト
+; LICENSE: CC0-1.0 <https://creativecommons.org/publicdomain/zero/1.0/deed.ja>
+; テスト
 
 #include "hsp3utf.as"
 #addition "WrapCall.as"
@@ -14,7 +14,7 @@
 	randomize
 	mapss_init
 
-	// 単純なケース
+	; 単純なケース
 	mapss_make m
 	assert mapss_length(m) == 0
 	assert mapss_is_empty(m)
@@ -25,7 +25,7 @@
 	assert mapss_has(m, "hello")
 	assert mapss_get(m, "hello") == "world"
 
-	// 複数の要素を追加するケース
+	; 複数の要素を追加するケース
 	mapss_make m
 	mapss_insert m, "a", "alpha"
 	mapss_insert m, "b", "bravo"
@@ -35,7 +35,7 @@
 	assert mapss_has(m, "a")
 	assert mapss_get(m, "a") == "alpha"
 
-	// insert が値を変更しないことのテスト
+	; insert が値を変更しないことのテスト
 	mapss_make m
 	mapss_insert m, "a", "alpha"
 	assert stat
@@ -43,14 +43,14 @@
 	assert stat == false
 	assert mapss_get(m, "a") == "alpha"
 
-	// set が値を変更することのテスト
+	; set が値を変更することのテスト
 	mapss_make m
 	mapss_set m, "a", "alpha"
 	mapss_set m, "a", "aleph"
 	assert mapss_length(m) == 1
 	assert mapss_get(m, "a") == "aleph"
 
-	// バイナリセーフのテスト
+	; バイナリセーフのテスト
 	sdim binary_input
 	lpoke binary_input, , 0x00abcd00
 	binary_input_len = 4
@@ -62,7 +62,7 @@
 	assert binary_output_len == binary_input_len
 	assert lpeek(binary_output) == 0x00abcd00
 
-	// 配列要素を連想配列にできることのテスト
+	; 配列要素を連想配列にできることのテスト
 	mapss_make m(0)
 	mapss_make m(1)
 	mapss_set m(0), "a", "0"
@@ -70,7 +70,7 @@
 	assert mapss_get(m(0), "a") == "0"
 	assert mapss_get(m(1), "a") == "1
 
-	// 大きめのケースのテスト
+	; 大きめのケースのテスト
 	prefix = str(rnd(10000))
 	mapss_make m
 	size = 100

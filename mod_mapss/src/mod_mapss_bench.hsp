@@ -1,18 +1,18 @@
-// LICENSE: CC0-1.0 <https://creativecommons.org/publicdomain/zero/1.0/deed.ja>
-// ベンチマーク
-// 連想配列にデータを追加して、各データを検索する、という処理の時間を測る。
+; LICENSE: CC0-1.0 <https://creativecommons.org/publicdomain/zero/1.0/deed.ja>
+; ベンチマーク
+; 連想配列にデータを追加して、各データを検索する、という処理の時間を測る。
 
 #packopt name "mod_mapss_bench"
 
 #include "mod_mapss.hsp"
 
-// d3timer のため
+; d3timer のため
 #include "d3m.hsp"
 
 #define true 1
 #define false 0
 
-	// 試験する連想配列の要素数のリスト。筆者のマシンでは 700 のとき両者の性能が拮抗する。
+	; 試験する連想配列の要素数のリスト。筆者のマシンでは 700 のとき両者の性能が拮抗する。
 	data_sizes = 10, 250, 700, 3000
 
 	font "MS Gothic", 12
@@ -23,7 +23,7 @@
 		color
 		mes "data_size = " + data_size
 
-		// 処理を繰り返す回数。
+		; 処理を繰り返す回数。
 		iter_count = 3000 * 3 / data_size
 		ok = true
 

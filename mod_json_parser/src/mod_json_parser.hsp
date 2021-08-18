@@ -1,141 +1,141 @@
-// LICENSE: CC0-1.0 <https://creativecommons.org/publicdomain/zero/1.0/deed.ja>
-// v0.1.0 <https://github.com/vain0x/hsp3-modules/tree/main/mod_json_parser>
+; LICENSE: CC0-1.0 <https://creativecommons.org/publicdomain/zero/1.0/deed.ja>
+; v0.1.0 <https://github.com/vain0x/hsp3-modules/tree/main/mod_json_parser>
 
-// 参考: [JSON](https://www.json.org/)
+; 参考: [JSON](https://www.json.org/)
 
 #ifndef included_mod_json_parser_hsp
 #define included_mod_json_parser_hsp
 
-// JSON パーサー
+; JSON パーサー
 #module m_json_parser
 
-// EOF (文字列の末尾) に到達したとき
+; EOF (文字列の末尾) に到達したとき
 #enum global json_parser_event_eof = 1
 
-// 空白、コメント、解釈不能な文字など
+; 空白、コメント、解釈不能な文字など
 #enum global json_parser_event_skip
 
-// ','
+; ','
 #enum global json_parser_event_comma
 
-// ':'
+; ':'
 #enum global json_parser_event_colon
 
-// '['
+; '['
 #enum global json_parser_event_array_start
 
-// ']'
+; ']'
 #enum global json_parser_event_array_end
 
-// '{'
+; '{'
 #enum global json_parser_event_object_start
 
-// '}'
+; '}'
 #enum global json_parser_event_object_end
 
-// 'null'
+; 'null'
 #enum global json_parser_event_null
 
-// 'true'
+; 'true'
 #enum global json_parser_event_true
 
-// 'false'
+; 'false'
 #enum global json_parser_event_false
 
-// 数値 (e.g. 3.14, -1e-9, etc.)
+; 数値 (e.g. 3.14, -1e-9, etc.)
 #enum global json_parser_event_number
 
-// 文字列リテラルの開始 ('"')
+; 文字列リテラルの開始 ('"')
 #enum global json_parser_event_string_start
 
-// 文字列リテラルの内部で、エスケープシーケンスのない部分
+; 文字列リテラルの内部で、エスケープシーケンスのない部分
 #enum global json_parser_event_string_verbatim
 
-// 文字列リテラルの内部で、1個のエスケープシーケンス
+; 文字列リテラルの内部で、1個のエスケープシーケンス
 #enum global json_parser_event_string_escape
 
-// 文字列リテラルの終了 ('"')
+; 文字列リテラルの終了 ('"')
 #enum global json_parser_event_string_end
 
-// 配列の要素の開始 ('[' や ',' の直後)
+; 配列の要素の開始 ('[' や ',' の直後)
 #enum global json_parser_event_item_start
 
-// 配列の要素の終了 (']' や ',' の直前)
+; 配列の要素の終了 (']' や ',' の直前)
 #enum global json_parser_event_item_end
 
-// オブジェクトのエントリーの開始 ('{' や ',' の直後)
+; オブジェクトのエントリーの開始 ('{' や ',' の直後)
 #enum global json_parser_event_pair_start
 
-// オブジェクトのエントリーの終了 ('}' や ',' の直前)
+; オブジェクトのエントリーの終了 ('}' や ',' の直前)
 #enum global json_parser_event_pair_end
 
-// JSON パーサーのバグと思われるエラー。
+; JSON パーサーのバグと思われるエラー。
 #enum global json_parser_error_bug = 1
 
-// JSON が途中で切れているエラー。
+; JSON が途中で切れているエラー。
 #enum global json_parser_error_unexpected_eof
 
-// JSON として解釈できない文字が出現している。
+; JSON として解釈できない文字が出現している。
 #enum global json_parser_error_unexpected_char
 
-// JSON としての解釈が終了した後に続きがある。
+; JSON としての解釈が終了した後に続きがある。
 #enum global json_parser_error_expected_eof
 
-// ',' または ']' が出現すべき位置に、出現していない。
+; ',' または ']' が出現すべき位置に、出現していない。
 #enum global json_parser_error_expected_comma_or_bracket_r
 
-// ',' または '}' が出現すべき位置に、出現していない。
+; ',' または '}' が出現すべき位置に、出現していない。
 #enum global json_parser_error_expected_comma_or_brace_r
 
-// ':' が出現すべき位置に、出現していない。
+; ':' が出現すべき位置に、出現していない。
 #enum global json_parser_error_expected_colon
 
-// 'null' が期待された。
+; 'null' が期待された。
 #enum global json_parser_error_expected_null
 
-// 'true' が期待された。
+; 'true' が期待された。
 #enum global json_parser_error_expected_true
 
-// 'false' が期待された。
+; 'false' が期待された。
 #enum global json_parser_error_expected_false
 
-// '\uHHHH' 形式のエスケープに16進数でない文字が含まれている。
+; '\uHHHH' 形式のエスケープに16進数でない文字が含まれている。
 #enum global json_parser_error_bad_unicode_escape
 
-// '\' の後にエスケープシーケンスとして解釈できない文字が出現している。
+; '\' の後にエスケープシーケンスとして解釈できない文字が出現している。
 #enum global json_parser_error_unknown_escape
 
 #define true 1
 #define false 0
 
-// 最も外側の値の前
+; 最も外側の値の前
 #enum state_before_root = 1
 
-// 最も外側の値の後
+; 最も外側の値の後
 #enum state_after_root
 
-// 配列の入り口
+; 配列の入り口
 #enum state_array_start
 
-// 配列の要素の前
+; 配列の要素の前
 #enum state_before_item
 
-// 配列の要素の後
+; 配列の要素の後
 #enum state_after_item
 
-// オブジェクトの入り口
+; オブジェクトの入り口
 #enum state_object_start
 
-// オブジェクトのペアの前
+; オブジェクトのペアの前
 #enum state_before_pair
 
-// オブジェクトのキーの後、コロンの前
+; オブジェクトのキーの後、コロンの前
 #enum state_after_key
 
-// オブジェクトのコロンの後、値の前
+; オブジェクトのコロンの後、値の前
 #enum state_before_value
 
-// オブジェクトの値 (: の後ろ) の後
+; オブジェクトの値 (: の後ろ) の後
 #enum state_after_value
 
 #define char_lf 0x0a
@@ -154,53 +154,53 @@
 	|| ('a' <= (%1) && (%1) <= 'f') \
 	|| ('A' <= (%1) && (%1) <= 'F'))
 
-// 数値の最初の文字か？
+; 数値の最初の文字か？
 #define ctype char_is_number_first(%1 = char) \
 	(char_is_digit(%1) || (%1) == '-')
 
-// トークンの最初の文字か？
+; トークンの最初の文字か？
 #define ctype char_is_value_first(%1 = char) \
 	(char_is_space(%1) || (%1) == 'n' || (%1) == 't' || (%1) == 'f' || \
 	(%1) == '"' || char_is_number_first(%1) || (%1) == '[' || (%1) == '{')
 
-// JSON として意味のある文字か？
+; JSON として意味のある文字か？
 #define ctype char_is_meta(%1 = char) \
 	(char_is_value_first(%1) || (%1) == ',' || (%1) == ':' || (%1) == ']' || (%1) == '}')
 
-// 次に値を読むべき状態か？
+; 次に値を読むべき状態か？
 #define ctype state_is_value_first(%1 = state) \
 	((%1) == state_before_root || (%1) == state_after_root \
 	|| (%1) == state_array_start || (%1) == state_before_item \
 	|| (%1) == state_object_start || (%1) == state_before_pair \
 	|| (%1) == state_before_value)
 
-// JSON 文字列をパースする。
-//
-// %prm
-// text, text_len, event_kinds, event_lens, event_count, error_kinds, error_indexes, error_count
-//
-// var text: パースする JSON 文字列が入った変数
-// int text_len: text の長さ
-//
-// array event_kinds: パース結果として各イベントの種類を受け取る配列変数
-// array event_lens: パース結果として各イベントの長さを受け取る配列変数
-// var event_count: パース結果としてイベントの個数を受け取る変数
-//
-// array error_kinds: パース結果として各エラーの種類を受け取る配列変数
-// array error_indexes: パース結果として各エラーの位置を受け取る配列変数
-// var error_count: パース結果としてエラーの個数を受け取る変数
-//
-// %inst
-// 文字列を JSON としてパース (構文解析) して、イベントやエラーを報告します。
-//
-// イベントの種類は定数 json_parser_event_* で定義されています。
-//
-// イベントの発生位置は event_lens を足していくと分かります。
-// (最初のイベントは位置 0 で起こり、次は位置 event_lens(0)、
-//  その次は位置 (event_lens(0) + event_lens(1)), ... で起こります。)
-// event_lens の長さの総和は、text_len に一致します。
-//
-// エラーの種類は定数 json_parser_error_* で定義されています。
+; JSON 文字列をパースする。
+;
+; %prm
+; text, text_len, event_kinds, event_lens, event_count, error_kinds, error_indexes, error_count
+;
+; var text: パースする JSON 文字列が入った変数
+; int text_len: text の長さ
+;
+; array event_kinds: パース結果として各イベントの種類を受け取る配列変数
+; array event_lens: パース結果として各イベントの長さを受け取る配列変数
+; var event_count: パース結果としてイベントの個数を受け取る変数
+;
+; array error_kinds: パース結果として各エラーの種類を受け取る配列変数
+; array error_indexes: パース結果として各エラーの位置を受け取る配列変数
+; var error_count: パース結果としてエラーの個数を受け取る変数
+;
+; %inst
+; 文字列を JSON としてパース (構文解析) して、イベントやエラーを報告します。
+;
+; イベントの種類は定数 json_parser_event_* で定義されています。
+;
+; イベントの発生位置は event_lens を足していくと分かります。
+; (最初のイベントは位置 0 で起こり、次は位置 event_lens(0)、
+;   その次は位置 (event_lens(0) + event_lens(1)), ... で起こります。)
+; event_lens の長さの総和は、text_len に一致します。
+;
+; エラーの種類は定数 json_parser_error_* で定義されています。
 #deffunc json_parser_parse \
 	var text, int text_len, \
 	array event_kinds, array event_lens, var event_count, \
@@ -210,30 +210,30 @@
 	event_count = 0
 	error_count = 0
 
-	// イベントを発行し終えた位置。次のイベントまたはエラーの基準となる。
+	; イベントを発行し終えた位置。次のイベントまたはエラーの基準となる。
 	s_index = 0
 
-	// 次に出力するイベントの種類。
+	; 次に出力するイベントの種類。
 	s_event_kind = -1
 
-	// 次に出力するイベントの長さ。
-	// s_index から始まるこの長さの文字列がイベントに含まれる。
+	; 次に出力するイベントの長さ。
+	; s_index から始まるこの長さの文字列がイベントに含まれる。
 	s_event_len = -1
 
-	// 次に報告するエラーの種類。
+	; 次に報告するエラーの種類。
 	s_error_kind = -1
 
-	// 次に報告するエラーの位置。
-	// s_index + s_error_offset の位置にエラーが報告される。
+	; 次に報告するエラーの位置。
+	; s_index + s_error_offset の位置にエラーが報告される。
 	s_error_offset = 0
 
-	// エラーを報告したかどうか。true なら、次のイベントまでエラーを報告しない。
+	; エラーを報告したかどうか。true なら、次のイベントまでエラーを報告しない。
 	s_error_found = false
 
-	// 再帰的に積んでいる状態の数。
+	; 再帰的に積んでいる状態の数。
 	s_prev_state_count = 0
 
-	// パーサーの状態。いま JSON のどのあたりをパースしているかを表す。
+	; パーサーの状態。いま JSON のどのあたりをパースしているかを表す。
 	s_state = state_before_root
 
 	repeat
@@ -247,7 +247,7 @@
 			continue
 		}
 
-		// 空白や不正な文字をスキップする。
+		; 空白や不正な文字をスキップする。
 		if char_is_space(c) || char_is_meta(c) == false {
 			s_space_offset = 0
 
@@ -275,7 +275,7 @@
 			continue
 		}
 
-		// 空の配列を見たとき
+		; 空の配列を見たとき
 		if s_state == state_array_start && c == ']' {
 			s_event_kind == json_parser_event_array_end
 			s_event_len = 1
@@ -312,7 +312,7 @@
 			continue
 		}
 
-		// 空のオブジェクトを見たとき
+		; 空のオブジェクトを見たとき
 		if s_state == state_object_start && c == '}' {
 			s_event_kind = json_parser_event_object_end
 			s_event_len = 1
@@ -365,7 +365,7 @@
 			continue
 		}
 
-		// ここから先は1個の JSON 値をパースする。
+		; ここから先は1個の JSON 値をパースする。
 		assert state_is_value_first(s_state)
 
 		if s_state == state_after_root {
@@ -486,7 +486,7 @@
 						continue
 					}
 
-					// \uHHHH
+					; \uHHHH
 					if c == 'u' {
 						if s_index + 6 > text_len {
 							s_error_kind = json_parser_error_unexpected_eof
@@ -561,7 +561,7 @@
 				s_number_offset++
 			}
 
-			// '0' | [1-9] [0-9]*
+			; '0' | [1-9] [0-9]*
 			if s_index + s_number_offset >= text_len {
 				s_error_offset = s_number_offset
 				gosub *l_error_eof
@@ -592,7 +592,7 @@
 				loop
 			}
 
-			// ('.' digit+)?
+			; ('.' digit+)?
 			if s_index + s_number_offset >= text_len {
 				s_error_offset = s_number_offset
 				gosub *l_error_eof
@@ -630,7 +630,7 @@
 				loop
 			}
 
-			// ([eE] [+-]? digit+)?
+			; ([eE] [+-]? digit+)?
 			if s_index + s_number_offset >= text_len {
 				s_error_offset = s_number_offset
 				gosub *l_error_eof
@@ -640,7 +640,7 @@
 			if c == 'e' || c = 'E' {
 				s_number_offset++
 
-				// [+-]?
+				; [+-]?
 				if s_index + s_number_offset >= text_len {
 					s_error_offset = s_number_offset
 					gosub *l_error_eof
@@ -657,7 +657,7 @@
 					break
 				}
 
-				// digits+
+				; digits+
 				c = peek(text, s_index + s_number_offset)
 				if char_is_digit(c) == false {
 					s_error_kind = json_parser_error_unexpected_char
@@ -719,7 +719,7 @@
 			continue
 		}
 
-		// すべてのケースを網羅したのでここには来ないはず。
+		; すべてのケースを網羅したのでここには来ないはず。
 		gosub *l_error_internal
 		assert false
 		break
@@ -731,7 +731,7 @@
 		gosub *l_skip_all
 	}
 
-	// EOF
+	; EOF
 	s_event_kind = json_parser_event_eof
 	s_event_len = 0
 	gosub *l_emit
@@ -739,8 +739,8 @@
 	assert s_index == text_len
 	return
 
-// イベントを報告する。s_index が進む。
-// s_event_kind, s_event_len を設定しておくこと。
+; イベントを報告する。s_index が進む。
+; s_event_kind, s_event_len を設定しておくこと。
 *l_emit
 
 	assert s_event_kind >= 1
@@ -757,14 +757,14 @@
 	s_error_found = false
 	return
 
-// エラーを報告する。s_error_kind を設定しておくこと。
+; エラーを報告する。s_error_kind を設定しておくこと。
 *l_error
 
 	assert s_error_kind >= 1
 	assert s_error_offset >= 0
 	assert s_index + s_error_offset <= text_len
 
-	// 大量のエラーを発生させるのを防ぐため、次のイベントまでエラーを報告しない。
+	; 大量のエラーを発生させるのを防ぐため、次のイベントまでエラーを報告しない。
 	if s_error_found {
 		s_error_kind = -1
 		s_error_offset = 0
@@ -780,7 +780,7 @@
 	s_error_offset = 0
 	return
 
-// 予期しない EOF によるエラー
+; 予期しない EOF によるエラー
 *l_error_eof
 
 	s_error_kind = json_parser_error_unexpected_eof
@@ -788,7 +788,7 @@
 	gosub *l_skip_all
 	return
 
-// パーサー自体のバグによるエラー。
+; パーサー自体のバグによるエラー。
 *l_error_internal
 
 	logmes strf("WARN: json_parser internal error (c=%d, s_state=%d)", c, s_state)
@@ -798,8 +798,8 @@
 	gosub *l_skip_all
 	return
 
-// エラー回復を試みる。
-// とりあえず改行までスキップする。
+; エラー回復を試みる。
+; とりあえず改行までスキップする。
 *l_recovery
 
 	s_str_lf = ""
@@ -814,7 +814,7 @@
 	}
 	return
 
-// 残りの部分のパースを完全に放棄する。
+; 残りの部分のパースを完全に放棄する。
 *l_skip_all
 
 	if s_index >= text_len {
@@ -826,14 +826,14 @@
 	gosub *l_emit
 	return
 
-// いまの状態をスタックに積む。
+; いまの状態をスタックに積む。
 *l_push_state
 
 	s_prev_states(s_prev_state_count) = s_state
 	s_prev_state_count++
 	return
 
-// 以前の状態をスタックから取る。
+; 以前の状態をスタックから取る。
 *l_pop_state
 
 	if s_prev_state_count == 0 {
@@ -846,7 +846,7 @@
 	s_state = s_prev_states(s_prev_state_count)
 	return
 
-// 値を1つ読んだとみなして、状態を1つ進める。
+; 値を1つ読んだとみなして、状態を1つ進める。
 *l_next_state
 
 	if s_state == state_before_root || s_state == state_after_root {
@@ -869,7 +869,7 @@
 		return
 	}
 
-	// 状態を進められない。
+	; 状態を進められない。
 	gosub *l_error_internal
 	assert state_is_value_first(s_state) == false
 	assert false

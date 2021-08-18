@@ -1,9 +1,9 @@
-// LICENSE: CC0-1.0 <https://creativecommons.org/publicdomain/zero/1.0/deed.ja>
-// JSON パーサーのテスト
+; LICENSE: CC0-1.0 <https://creativecommons.org/publicdomain/zero/1.0/deed.ja>
+; JSON パーサーのテスト
 
-// mod_json_parse_tests 以下にある各 JSON ファイルをパースして、
-// パース結果を _snapshot.txt ファイルに出力する。
-// パース結果が正しいかは目視で確認すること。(Git の差分が出なければ問題ない。)
+; mod_json_parse_tests 以下にある各 JSON ファイルをパースして、
+; パース結果を _snapshot.txt ファイルに出力する。
+; パース結果が正しいかは目視で確認すること。(Git の差分が出なければ問題ない。)
 
 #include "hsp3utf.as"
 #addition "WrapCall.as"
@@ -74,7 +74,7 @@
 	sdim s_test_file
 	sdim s_text
 
-	// テストファイルを列挙する。
+	; テストファイルを列挙する。
 	chdir "mod_json_parser_tests"
 	dirlist s_test_files, "*.json"
 	s_test_count = stat
@@ -86,24 +86,24 @@
 		noteunsel
 		s_test_file_name_len = strlen(s_test_file)
 
-		// テストの名前をファイル名から逆算する。
+		; テストの名前をファイル名から逆算する。
 		s_test_name_len = s_test_file_name_len - strlen(".json")
 		s_test_name = strmid(s_test_file, 0, s_test_name_len)
 
 		s_snapshot_file = s_test_name + "_snapshot.txt"
 
-		// テストファイルをロードする。
+		; テストファイルをロードする。
 		notesel s_text
 		noteload s_test_file
 		noteunsel
 		s_text_len = strlen(s_text)
 
-		// パースする。
+		; パースする。
 		logmes strf("test: %s", s_test_name)
 
 		json_parser_parse s_text, s_text_len, s_event_kinds, s_event_lens, s_event_count, s_error_kinds, s_error_indexes, s_error_count
 
-		// 基本的な事後条件を検査する。
+		; 基本的な事後条件を検査する。
 		assert s_event_count >= 0
 		assert length(s_event_kinds) >= s_event_count
 		assert length(s_event_lens) >= s_event_count
@@ -112,7 +112,7 @@
 		assert length(s_error_kinds) >= s_error_count
 		assert length(s_error_indexes) >= s_error_count
 
-		// パース結果を文字列に書き起こす。
+		; パース結果を文字列に書き起こす。
 		s_snapshot = ""
 		s_snapshot_index = 0
 		s_text_index = 0
@@ -125,7 +125,7 @@
 		s_snapshot += "\n[EVENTS]\n"
 		s_text_index = 0
 		repeat s_event_count
-			// 字下げ
+			; 字下げ
 			if jpe_is_end_node(s_event_kinds(cnt)) {
 				s_depth = limit(s_depth - 1, 0)
 			}
@@ -134,21 +134,21 @@
 				s_depth++
 			}
 
-			// イベントの名前
+			; イベントの名前
 			s_name = s_event_names(s_event_kinds(cnt))
 
-			// イベントの長さと範囲
+			; イベントの長さと範囲
 			s_len = s_event_lens(cnt)
 			s_start = s_text_index
 			s_end = s_text_index + s_len
 			s_word = strmid(s_text, s_start, s_end - s_start)
 
-			// スナップショットに追加
+			; スナップショットに追加
 			s_snapshot += strf("%s%s(%d) `%s`\n", s_indent, s_name, s_len, s_word)
 			s_text_index += s_len
 		loop
 
-		// ちょうど末尾までパースしたことを検査
+		; ちょうど末尾までパースしたことを検査
 		if s_text_index != s_text_len {
 			s_snapshot += strf("WARN: s_text_index = %d, s_text_len = %d", s_text_index, s_text_len)
 		}
@@ -165,7 +165,7 @@
 					break
 				}
 
-				// エラー位置に記号を挿入する。
+				; エラー位置に記号を挿入する。
 				if s_error_index < s_error_count {
 					if s_text_index == s_error_indexes(s_error_index) {
 						s_snapshot += strf("<!%s!>", s_error_names(s_error_kinds(s_error_index)))
@@ -174,7 +174,7 @@
 					}
 				}
 
-				// JSON テキストをスナップショットにコピーしていく。
+				; JSON テキストをスナップショットにコピーしていく。
 				if s_error_index < s_error_count {
 					s_text_next = s_error_indexes(s_error_index)
 				} else {
@@ -188,7 +188,7 @@
 
 		s_snapshot += "\n[EOF]\n"
 
-		// スナップショットをファイルに書き込む。
+		; スナップショットをファイルに書き込む。
 		notesel s_snapshot
 		notesave s_snapshot_file
 		noteunsel
